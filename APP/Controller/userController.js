@@ -1,9 +1,9 @@
 // admRoutes.js
 
-import express from 'express';
 import jwt from 'jsonwebtoken';
 import * as userService from '../Service/userService.js';
 import dotenv from 'dotenv';
+import { SequelizeInstance } from '../utility/DbHelper.js';
 
 dotenv.config();
 
@@ -27,6 +27,85 @@ export async function loginUser(req, res) {
       res.status(400).send({ message: 'Admin not found' });
     }
   } catch (error) {
+    console.log(error);
+    res.status(404).send(error);
+  }
+}
+
+export async function getUser(req, res){
+  try {
+    const userId = req.params.userId;
+    const result = await userService.getUser(userId);
+    res.status(200).send(result);
+  } catch (error){
+    console.log(error);
+    res.status(500).send({ error: error.message });
+  }
+}
+
+export async function createInterest (req, res){
+  const t = await SequelizeInstance.transaction();
+  try {
+    const interestDetails = req.body;
+    const interest = await userService.createInterest(interestDetails);
+    res.status(200).send(interest);
+    await t.commit();
+  } catch (error) {
+    await t.rollback();
+    console.log(error);
+    res.status(404).send(error);
+  }
+}
+
+export async function getInterests(req, res) {
+  try {
+    const userId = req.params.userId;
+    const result = await userService.getInterests(userId);
+    res.status(200).send(result);
+  } catch (error){
+    console.log(error);
+    res.status(500).send({ error: error.message });
+  }
+}
+
+export async function getInterest(req, res) {
+  try {
+    const interestId = req.params.userInterestId;
+    const result = await userService.getInterest(interestId);
+    res.status(200).send(result);
+  } catch (error){
+    console.log(error);
+    res.status(500).send({ error: error.message });
+  }
+}
+
+export async function updateInterest(req, res){
+  const t = await SequelizeInstance.transaction();
+    try{
+        const userInterestId = req.params.userInterestId;
+        const userInterestDetails = req.body;
+        const userInterest = await userService.updateInterest(
+            userInterestId,
+            userInterestDetails
+        );
+        res.status(200).send(userInterest);
+        await t.commit();
+    } catch (error){
+        await t.rollback();
+        console.log(error);
+        res.status(404).send(error);
+    }
+}
+
+export async function deleteInterest(req, res){
+  const t = await SequelizeInstance.transaction();
+  try {
+    const interestIds = req.body;
+    const interest = await userService.deleteInterest(interestIds);
+    res.status(200).send({interest});
+    await t.commit();
+  } catch (error){
+    await t.rollback();
     console.log(error);
     res.status(404).send(error);
   }

@@ -128,12 +128,12 @@ const Role = sequelize.define(
 const GoogleLogin = sequelize.define(
   'GoogleLogin',
   {
-    googleLoginId: {
+    google_login_id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
-    userId: {
+    user_id: {
       type: DataTypes.UUID,
     },
     token: {
@@ -152,18 +152,18 @@ const GoogleLogin = sequelize.define(
 const Notification = sequelize.define(
   'Notification',
   {
-    notificationId: {
+    notification_id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
-    userId: {
+    user_id: {
       type: DataTypes.UUID,
     },
     content: {
       type: DataTypes.TEXT,
     },
-    createdAt: {
+    created_at: {
       type: DataTypes.DATE,
     },
     status: {
@@ -179,21 +179,21 @@ const Notification = sequelize.define(
 const Friendship = sequelize.define(
   'Friendship',
   {
-    friendshipId: {
+    friendship_id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
-    userId1: {
+    user_id_1: {
       type: DataTypes.UUID,
     },
-    userId2: {
+    user_id_2: {
       type: DataTypes.UUID,
     },
-    friendshipStatusId: {
+    friendship_status_id: {
       type: DataTypes.UUID,
     },
-    createdAt: {
+    created_at: {
       type: DataTypes.DATE,
     },
   },
@@ -205,12 +205,12 @@ const Friendship = sequelize.define(
 const FriendshipStatus = sequelize.define(
   'FriendshipStatus',
   {
-    friendshipStatusId: {
+    friendship_status_id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
-    friendshipStatus: {
+    friendship_status: {
       type: DataTypes.TEXT,
     },
   },
@@ -222,29 +222,37 @@ const FriendshipStatus = sequelize.define(
 const Blog = sequelize.define(
   'Blog',
   {
-    blogId: {
+    blog_id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
-    userId: {
+    user_id: {
       type: DataTypes.UUID,
     },
     content: {
       type: DataTypes.TEXT,
     },
-    likesCount: {
+    likes_count: {
       type: DataTypes.INTEGER,
     },
-    commentsCount: {
+    comments_count: {
       type: DataTypes.INTEGER,
     },
-    isApprove: {
+    is_approve: {
       type: DataTypes.BOOLEAN,
     },
-    createdAt: {
+    created_at: {
       type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
     },
+    image:{
+      type: DataTypes.TEXT,
+    },
+    title:{
+      type: DataTypes.TEXT,
+    }
   },
   {
     tableName: 'blog',
@@ -254,22 +262,24 @@ const Blog = sequelize.define(
 const Comment = sequelize.define(
   'Comment',
   {
-    commentId: {
+    comment_id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
-    blogId: {
+    blog_id: {
       type: DataTypes.UUID,
     },
-    userId: {
+    user_id: {
       type: DataTypes.UUID,
     },
     content: {
       type: DataTypes.TEXT,
     },
-    createdAt: {
+    created_at: {
       type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
     },
   },
   {
@@ -280,24 +290,26 @@ const Comment = sequelize.define(
 const Message = sequelize.define(
   'Message',
   {
-    messageId: {
+    message_id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
-    senderId: {
+    sender_id: {
       type: DataTypes.UUID,
     },
-    receiverId: {
+    receiver_id: {
       type: DataTypes.UUID,
     },
     content: {
       type: DataTypes.TEXT,
     },
-    createdAt: {
+    created_at: {
       type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
     },
-    isRead: {
+    is_read: {
       type: DataTypes.BOOLEAN,
     },
   },
@@ -309,12 +321,12 @@ const Message = sequelize.define(
 const Event = sequelize.define(
   'Event',
   {
-    eventId: {
+    event_id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
-    organizerId: {
+    organizer_id: {
       type: DataTypes.UUID,
     },
     title: {
@@ -323,20 +335,25 @@ const Event = sequelize.define(
     description: {
       type: DataTypes.TEXT,
     },
-    timeOfEvent: {
+    time_of_event: {
       type: DataTypes.DATE,
     },
     location: {
       type: DataTypes.TEXT,
     },
-    participantsCount: {
+    participants_count: {
       type: DataTypes.INTEGER,
     },
-    isApprove: {
+    is_approve: {
       type: DataTypes.BOOLEAN,
     },
-    createdAt: {
+    background_img: {
+      type: DataTypes.TEXT,
+    },
+    created_at: {
       type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
     },
   },
   {
@@ -347,22 +364,24 @@ const Event = sequelize.define(
 const EventParticipation = sequelize.define(
   'EventParticipation',
   {
-    participationId: {
+    participation_id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
-    eventId: {
+    event_id: {
       type: DataTypes.UUID,
     },
-    userId: {
+    user_id: {
       type: DataTypes.UUID,
     },
     eventParticipationStatusId: {
       type: DataTypes.UUID,
     },
-    createdAt: {
+    created_at: {
       type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
     },
   },
   {
@@ -373,12 +392,12 @@ const EventParticipation = sequelize.define(
 const EventParticipationStatus = sequelize.define(
   'EventParticipationStatus',
   {
-    eventParticipationStatusId: {
+    event_participation_status_id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
-    eventParticipationStatus: {
+    event_participation_status: {
       type: DataTypes.TEXT,
     },
   },
@@ -390,30 +409,30 @@ const EventParticipationStatus = sequelize.define(
 const UserStatistics = sequelize.define(
   'UserStatistics',
   {
-    statisticsId: {
+    statistics_id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
-    userId: {
+    user_id: {
       type: DataTypes.UUID,
     },
-    loginCount: {
+    login_count: {
       type: DataTypes.INTEGER,
     },
-    blogCount: {
+    blog_count: {
       type: DataTypes.INTEGER,
     },
-    eventCount: {
+    event_count: {
       type: DataTypes.INTEGER,
     },
-    messageCount: {
+    message_count: {
       type: DataTypes.INTEGER,
     },
-    friendCount: {
+    friend_count: {
       type: DataTypes.INTEGER,
     },
-    createdAt: {
+    created_at: {
       type: DataTypes.DATE,
     },
   },
@@ -425,24 +444,26 @@ const UserStatistics = sequelize.define(
 const BlogReport = sequelize.define(
   'BlogReport',
   {
-    reportId: {
+    report_id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
-    reporterId: {
+    reporter_id: {
       type: DataTypes.UUID,
     },
-    blogId: {
+    blog_id: {
       type: DataTypes.UUID,
     },
     content: {
       type: DataTypes.TEXT,
     },
-    createdAt: {
+    created_at: {
       type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
     },
-    reportStatusId: {
+    report_status_id: {
       type: DataTypes.UUID,
     },
   },
@@ -454,24 +475,26 @@ const BlogReport = sequelize.define(
 const EventReport = sequelize.define(
   'EventReport',
   {
-    reportId: {
+    report_id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
-    reporterId: {
+    reporter_id: {
       type: DataTypes.UUID,
     },
-    eventId: {
+    event_id: {
       type: DataTypes.UUID,
     },
     content: {
       type: DataTypes.TEXT,
     },
-    createdAt: {
+    created_at: {
       type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
     },
-    reportStatusId: {
+    report_status_id: {
       type: DataTypes.UUID,
     },
   },
@@ -483,12 +506,12 @@ const EventReport = sequelize.define(
 const ReportStatus = sequelize.define(
   'ReportStatus',
   {
-    reportStatusId: {
+    report_status_id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
-    reportStatus: {
+    report_status: {
       type: DataTypes.TEXT,
     },
   },
@@ -512,7 +535,8 @@ const Interest = sequelize.define(
     },
     created_at: {
       type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
+      allowNull: false,
+      defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
     },
   },
   {
@@ -550,52 +574,52 @@ const UserInterest = sequelize.define(
 
 User.belongsTo(Role, { foreignKey: 'role_id', as: 'UserRole' });
 
-EventReport.belongsTo(User, { foreignKey: 'reporterId', as: 'reporter' });
-EventReport.belongsTo(Event, { foreignKey: 'eventId', as: 'event' });
+EventReport.belongsTo(User, { foreignKey: 'reporter_id', as: 'reporter' });
+EventReport.belongsTo(Event, { foreignKey: 'event_id', as: 'event' });
 EventReport.belongsTo(ReportStatus, {
-  foreignKey: 'reportStatusId',
+  foreignKey: 'report_status_id',
   as: 'reportStatus',
 });
 
-BlogReport.belongsTo(User, { foreignKey: 'reporterId', as: 'reporter' });
-BlogReport.belongsTo(Blog, { foreignKey: 'blogId', as: 'blog' });
+BlogReport.belongsTo(User, { foreignKey: 'reporter_id', as: 'reporter' });
+BlogReport.belongsTo(Blog, { foreignKey: 'blog_id', as: 'blog' });
 BlogReport.belongsTo(ReportStatus, {
-  foreignKey: 'reportStatusId',
+  foreignKey: 'report_status_id',
   as: 'reportStatus',
 });
-User.belongsTo(Role, { foreignKey: 'roleId', as: 'role' });
-UserStatistics.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+User.belongsTo(Role, { foreignKey: 'role_id', as: 'role' });
+UserStatistics.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
-EventParticipation.belongsTo(Event, { foreignKey: 'eventId', as: 'event' });
-EventParticipation.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+EventParticipation.belongsTo(Event, { foreignKey: 'event_id', as: 'event' });
+EventParticipation.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 EventParticipation.belongsTo(EventParticipationStatus, {
-  foreignKey: 'eventParticipationStatusId',
+  foreignKey: 'event_participation_status_id',
   as: 'eventParticipationStatus',
 });
 
-Event.belongsTo(User, { foreignKey: 'organizerId', as: 'organizer' });
+Event.belongsTo(User, { foreignKey: 'organizer_id', as: 'organizer' });
 Event.hasMany(EventParticipation, {
-  foreignKey: 'eventId',
+  foreignKey: 'event_id',
   as: 'eventParticipations',
 });
 
-Notification.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+Notification.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
-Message.belongsTo(User, { foreignKey: 'senderId', as: 'sender' });
-Message.belongsTo(User, { foreignKey: 'receiverId', as: 'receiver' });
+Message.belongsTo(User, { foreignKey: 'sender_id', as: 'sender' });
+Message.belongsTo(User, { foreignKey: 'receiver_id', as: 'receiver' });
 
-Comment.belongsTo(Blog, { foreignKey: 'blogId', as: 'blog' });
-Comment.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+Comment.belongsTo(Blog, { foreignKey: 'blog_id', as: 'blog' });
+Comment.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
-Blog.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+Blog.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
-Friendship.belongsTo(User, { foreignKey: 'userId1', as: 'user1' });
-Friendship.belongsTo(User, { foreignKey: 'userId2', as: 'user2' });
+Friendship.belongsTo(User, { foreignKey: 'user_id_1', as: 'user1' });
+Friendship.belongsTo(User, { foreignKey: 'user_id_2', as: 'user2' });
 Friendship.belongsTo(FriendshipStatus, {
-  foreignKey: 'friendshipStatusId',
+  foreignKey: 'friendship_status_id',
   as: 'friendshipStatus',
 });
-GoogleLogin.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+GoogleLogin.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
 export default sequelize;
 export {
@@ -617,4 +641,5 @@ export {
   Friendship,
   Notification,
   Interest,
+  UserInterest
 };

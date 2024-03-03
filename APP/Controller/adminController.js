@@ -3,6 +3,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import * as admService from '../Service/adminService.js';
+import * as userService from '../Service/userService.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -39,5 +40,26 @@ export async function getStatics(req, res) {
   } catch (e) {
     console.log(e);
     res.status(400).send(e);
+  }
+}
+
+export async function getUser(req, res){
+  try {
+    const userId = req.params.userId;
+    const result = await userService.getUser(userId);
+    res.status(200).send(result);
+  } catch (error){
+    console.log(error);
+    res.status(500).send({ error: error.message });
+  }
+}
+
+export async function getUsers(req, res) {
+  try {
+    const result = await admService.getUsers();
+    res.status(200).send(result);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ error: error.message });
   }
 }

@@ -1,4 +1,3 @@
-import express from 'express';
 import * as interestService from '../Service/interestService.js';
 import { SequelizeInstance } from '../utility/DbHelper.js';
 

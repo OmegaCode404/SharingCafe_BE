@@ -33,18 +33,34 @@ export async function getAdmDetails(email, password) {
 }
 export async function getStatics() {
   const sqlQuery = `
-SELECT 'Account' AS entity_type, COUNT(*) AS entity_count
-FROM public.user
-UNION
-SELECT 'Blog' AS entity_type, COUNT(*) AS entity_count
-FROM blog
-UNION
-SELECT 'Event' AS entity_type, COUNT(*) AS entity_count
-FROM event;`;
-
+    SELECT 'Account' AS entity_type, COUNT(*) AS entity_count
+    FROM public.user
+    UNION
+    SELECT 'Blog' AS entity_type, COUNT(*) AS entity_count
+    FROM blog
+    UNION
+    SELECT 'Event' AS entity_type, COUNT(*) AS entity_count
+    FROM event;`;
   const statics = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
   });
   return statics;
+}
+export async function getUsers() {
+  const sqlQuery = `
+  Select 
+	  *
+  from public."user" u 
+  inner join 
+	  role r
+	  on u.role_id = r.role_id
+  where 
+    r.role_name = 'USER'
+  `;
+  const result = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
+  return result;
 }

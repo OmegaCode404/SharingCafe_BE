@@ -1,7 +1,11 @@
 import * as adminDAL from '../DAL/adminDAL.js';
-export function getAdmDetails(email, password) {
-  return adminDAL.getAdmDetails(email, password);
+// DAL -> Data Access Layer
+export async function getAdmDetails(email, password) {
+  return await adminDAL.getAdmDetails(email, password);
 }
-export function getStatics() {
-  return adminDAL.getStatics();
+export async function getStatics() {
+  return await adminDAL.getStatics();
+}
+export async function getUsers() {
+  return await adminDAL.getUsers();
 }
