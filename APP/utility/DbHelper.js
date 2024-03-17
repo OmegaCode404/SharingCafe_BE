@@ -101,6 +101,9 @@ const User = sequelize.define(
     role_id: {
       type: DataTypes.UUID,
     },
+    is_available: {
+      type: DataTypes.BOOLEAN,
+    },
   },
   {
     tableName: 'user',
@@ -230,6 +233,9 @@ const Blog = sequelize.define(
     user_id: {
       type: DataTypes.UUID,
     },
+    interest_id: {
+      type: DataTypes.UUID,
+    },
     content: {
       type: DataTypes.TEXT,
     },
@@ -242,17 +248,20 @@ const Blog = sequelize.define(
     is_approve: {
       type: DataTypes.BOOLEAN,
     },
+    is_visible: {
+      type: DataTypes.BOOLEAN,
+    },
     created_at: {
       type: DataTypes.DATE,
       allowNull: false,
       defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
     },
-    image:{
+    image: {
       type: DataTypes.TEXT,
     },
-    title:{
+    title: {
       type: DataTypes.TEXT,
-    }
+    },
   },
   {
     tableName: 'blog',
@@ -329,6 +338,9 @@ const Event = sequelize.define(
     organizer_id: {
       type: DataTypes.UUID,
     },
+    interest_id: {
+      type: DataTypes.UUID,
+    },
     title: {
       type: DataTypes.TEXT,
     },
@@ -338,17 +350,30 @@ const Event = sequelize.define(
     time_of_event: {
       type: DataTypes.DATE,
     },
+    end_of_event: {
+      type: DataTypes.DATE,
+    },
     location: {
+      type: DataTypes.TEXT,
+    },
+    address: {
       type: DataTypes.TEXT,
     },
     participants_count: {
       type: DataTypes.INTEGER,
+    },
+    interest_id: {
+      type: DataTypes.UUID,
+      allowNull: false,
     },
     is_approve: {
       type: DataTypes.BOOLEAN,
     },
     background_img: {
       type: DataTypes.TEXT,
+    },
+    is_visible: {
+      type: DataTypes.BOOLEAN,
     },
     created_at: {
       type: DataTypes.DATE,
@@ -572,6 +597,44 @@ const UserInterest = sequelize.define(
   },
 );
 
+const Schedule = sequelize.define(
+  'schedule', {
+    schedule_id: {
+      type: DataTypes.UUID,
+      primaryKey: true,
+      defaultValue: DataTypes.UUIDV4,
+    },
+    content: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+    },
+    location: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+    },
+    date: {
+      type: DataTypes.DATE,
+    },
+    is_accept: {
+      type: DataTypes.BOOLEAN,
+    },
+    create_at: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
+    },
+    sender_id: {
+      type: DataTypes.UUID,
+    },
+    receiver_id: {
+      type: DataTypes.UUID,
+    },
+  },{
+    tableName: 'schedule',
+    timestamps: false,
+  },
+)
+
 User.belongsTo(Role, { foreignKey: 'role_id', as: 'UserRole' });
 
 EventReport.belongsTo(User, { foreignKey: 'reporter_id', as: 'reporter' });
@@ -641,5 +704,6 @@ export {
   Friendship,
   Notification,
   Interest,
-  UserInterest
+  UserInterest,
+  Schedule,
 };

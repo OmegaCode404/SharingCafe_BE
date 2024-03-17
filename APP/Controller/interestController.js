@@ -67,3 +67,14 @@ export async function deleteInterest(req, res) {
     res.status(404).send(e);
   }
 }
+
+export async function getToppick(req, res) {
+  try {
+    const result = await interestService.getToppick();
+    console.log(result);
+    res.status(200).send(result);
+  } catch (e) {
+    console.log(e);
+    res.status(404).send(e);
+  }
+}

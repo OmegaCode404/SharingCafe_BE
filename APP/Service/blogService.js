@@ -16,11 +16,21 @@ export async function createBlog(dataObj){
 export async function updateBlog(blogId, blogDetails){
     const blog = await getBlog(blogId);
     if (!blog) throw new Error('Blog not found !!!');
-    return await blogDAL.updateBlog(blog, blogDetails);
+    return await blogDAL.updateBlog(blogId, blogDetails);
 }
 
 export async function deleteBlog(blogId) {
     const blog = await getBlog(blogId);
     if (!blog) throw new Error('Blog not found !!!');
     return await blogDAL.deleteBlog(blogId);
-  }
+}
+
+export async function updateImg(blogId, fileData){
+    const blog = await getBlog(blogId);
+    if (!blog) throw new Error('Blog not found !!!');
+    return await blogDAL.updateImg(blogId, fileData);
+}
+
+export async function getNewBlogs(){
+    return await blogDAL.getNewBlogs();
+}

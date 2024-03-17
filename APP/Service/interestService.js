@@ -20,3 +20,7 @@ export async function updateInterest(interestId, interestDetails) {
 export async function deleteInterest(interestIds) {
   return await interestDAL.deleteInterests(interestIds);
 }
+
+export async function getToppick(){
+  return await interestDAL.getToppick();
+}

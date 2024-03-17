@@ -1,4 +1,4 @@
-import { Interest } from '../utility/DbHelper.js';
+import { Interest, SequelizeInstance } from '../utility/DbHelper.js';
 
 export async function getInterests() {
   const interests = await Interest.findAll();
@@ -25,4 +25,23 @@ export async function deleteInterests(interestIds) {
     where: { interest_id: interestIds },
   });
   return deletedInterest;
+}
+
+export async function getToppick() {
+  const sqlQuery = `
+  select 
+ 	  i.interest_id, i."name", i.image, count(ui.interest_id) as top_pick
+  from
+ 	  user_interest ui
+  join
+ 	  interest i 
+ 	  on ui.interest_id = i.interest_id
+  group by i."name", i.image, i.interest_id 
+  order by top_pick desc
+  `;
+  const result = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
+  return result;
 }

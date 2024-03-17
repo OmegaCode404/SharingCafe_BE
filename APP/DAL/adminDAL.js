@@ -49,18 +49,53 @@ export async function getStatics() {
 }
 export async function getUsers() {
   const sqlQuery = `
-  Select 
-	  *
-  from public."user" u 
-  inner join 
-	  role r
-	  on u.role_id = r.role_id
-  where 
-    r.role_name = 'USER'
+  SELECT 
+    u.*,
+    json_agg(
+        json_build_object(
+            'interest_id', ui.interest_id,
+            'interest_name', ui.name
+        )
+      ) AS interest_list
+  FROM 
+      public."user" u 
+  INNER JOIN 
+      (SELECT * FROM role WHERE role_name = 'USER') r ON u.role_id = r.role_id
+  LEFT JOIN 
+      (
+          SELECT 
+              ui.user_id,
+              ui.interest_id,
+              i.name
+          FROM 
+              user_interest ui 
+          INNER JOIN 
+              interest i ON i.interest_id = ui.interest_id
+          ORDER BY 
+              ui.user_id, ui.interest_id  
+      ) ui ON ui.user_id = u.user_id
+  GROUP BY 
+      u.user_id, u.role_id; 
   `;
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
   });
   return result;
+}
+
+export async function getUser(userId) {
+  const result = await User.findByPk(userId);
+  return result;
+}
+
+export async function updateUserStatus(userId, userDetails) {
+  return await User.update(
+    {
+      is_available: userDetails.is_available,
+    },
+    {
+      where: { user_id: userId },
+    },
+  );
 }

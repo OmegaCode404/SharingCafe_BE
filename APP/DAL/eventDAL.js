@@ -1,11 +1,45 @@
-import { Event } from '../utility/DbHelper.js';
+import { Event, SequelizeInstance } from '../utility/DbHelper.js';
+
 export async function getEvents() {
-  const result = await Event.findAll();
+  const sqlQuery = `
+  select 
+    e.*, u.user_name, i.name
+  from
+    public."event" e 
+  left join 
+    interest i 
+    on 1=1 
+    and e.interest_id = i.interest_id
+  join
+    "user" u
+    on u.user_id = e.organizer_id
+  `;
+  const result = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
   return result;
 }
 
 export async function getEvent(eventId) {
-  const result = await Event.findByPk(eventId);
+  const sqlQuery = `
+  select 
+    e.*, u.user_name, i.name 
+  from
+    public."event" e 
+  left join 
+    interest i 
+    on 1=1 
+    and e.interest_id = i.interest_id
+  join
+    "user" u
+    on e.organizer_id = u.user_id
+  where e.event_id = '${eventId}'
+  `;
+  const result = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
   return result;
 }
 export async function createEvent(eventId, dataObj) {
@@ -15,23 +49,156 @@ export async function createEvent(eventId, dataObj) {
     title: dataObj.title,
     description: dataObj.description,
     time_of_event: dataObj.time_of_event,
+    end_of_event: dataObj.end_of_event,
     location: dataObj.location,
-    participants_count: dataObj.participants_count,
-    is_approve: dataObj.is_approve,
+    address: dataObj.address,
     background_img: dataObj.background_img,
+    is_visible: dataObj.is_visible,
+    interest_id: dataObj.interest_id,
   });
 }
 
-export async function updateEvent(event, eventDetails){
-  await event.update({
-    organizer_id: eventDetails.organizer_id,
-    title: eventDetails.title,
-    description: eventDetails.description,
-    time_of_event: eventDetails.time_of_event,
-    location: eventDetails.location,
-    participants_count: eventDetails.participants_count,
-    is_approve: eventDetails.is_approve,
-    background_img: eventDetails.background_img
+export async function updateEventImage(eventId, fileData) {
+  return await Event.update({
+    background_img: fileData?.path
+  },
+  {
+    where: { event_id: eventId },
+  })
+}
+
+export async function updateEvent(eventId, eventDetails) {
+  return await Event.update(
+    {
+      organizer_id: eventDetails.organizer_id,
+      interest_id: eventDetails.interest_id,
+      title: eventDetails.title,
+      description: eventDetails.description,
+      time_of_event: eventDetails.time_of_event,
+      end_of_event: eventDetails.end_of_event,
+      location: eventDetails.location,
+      participants_count: eventDetails.participants_count,
+      interest_id: eventDetails.interest_id,
+      is_approve: eventDetails.is_approve,
+      background_img: eventDetails.background_img,
+      is_visible: eventDetails.is_visible,
+    },
+    {
+      where: { event_id: eventId },
+    },
+  );
+}
+
+export async function deleteEvent(eventId) {
+  const deletedEvent = await Event.destroy({
+    where: { event_id: eventId },
   });
-  return event;
+  return deletedEvent;
+}
+
+export async function getNewEvents() {
+  const date = new Date(Date.now());
+  const sqlQuery = `
+  select 
+    e.event_id, e.title, e.background_img, e.time_of_event, e.address, e.participants_count, e.end_of_event
+  from
+    public."event" e 
+  left join 
+    interest i 
+    on 1=1 
+    and e.interest_id = i.interest_id
+  join
+    "user" u
+    on u.user_id = e.organizer_id
+    where e.time_of_event >= '${date.toUTCString()}' or e.end_of_event >= '${date.toUTCString()}'
+  order by e.time_of_event
+  `;
+  const result = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
+  return result;
+}
+
+export async function getEventsByDate(dateString) {
+  const date = new Date(dateString.date);
+  const sqlQuery = `
+  select 
+    e.event_id, e.title, e.background_img, e.time_of_event, e.address, e.participants_count, e.end_of_event
+  from
+    public."event" e 
+  left join 
+    interest i 
+    on 1=1 
+    and e.interest_id = i.interest_id
+  join
+    "user" u
+    on u.user_id = e.organizer_id
+    where e.time_of_event >= '${date.toDateString()}'
+  order by e.time_of_event
+  `;
+  const result = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
+  return result;
+}
+
+export async function getEventsByName(dataObj) {
+  let name = dataObj.title;
+  if (name == null) {name = ''}
+  let date = new Date(dataObj.date);
+  if (date == 'Invalid Date') {date = new Date('1/1/1000')}
+  const sqlQuery = `
+  select 
+    e.*, u.user_name, i."name"
+  from
+    public."event" e 
+  left join 
+    interest i 
+    on 1=1 
+    and e.interest_id = i.interest_id
+  join
+    "user" u
+    on u.user_id = e.organizer_id
+  where (e.time_of_event >= '${date.toUTCString()}' or e.end_of_event <= '${date.toUTCString()}') and e.title  like '%${name}%'
+  `;
+  const result = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
+  return result;
+}
+
+export async function getPopularEvents() {
+  const sqlQuery = `
+  select 
+	e.event_id 
+    , e.title
+    , e.background_img
+    , e.time_of_event
+    , e.address
+    , e.participants_count
+    , e.end_of_event
+    , u.user_name
+    , i.name 
+  from
+    public."event" e 
+  left join 
+    interest i 
+    on 1=1 
+    and e.interest_id = i.interest_id
+  join
+    "user" u
+    on u.user_id = e.organizer_id
+  order by 
+    e.time_of_event desc
+    , e.participants_count desc
+  limit 10
+  `;
+  const result = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
+  return result;
 }
