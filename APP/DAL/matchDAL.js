@@ -39,7 +39,7 @@ export async function upsertMatch(matchId, userId, userId2, statusId) {
   return result;
 }
 
-export async function MatchCouple(userId, userId2) {
+export async function getMatchCouple(userId, userId2) {
   const sqlQuery = `
     SELECT 
       user_match_id, 

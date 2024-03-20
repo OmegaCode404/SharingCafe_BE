@@ -3,7 +3,8 @@ import { SequelizeInstance } from '../utility/DbHelper.js';
 // GET ALL BLOG
 export async function getBlogs(req, res) {
   try {
-    const result = await blogService.getBlogs();
+    const page = req.query.page;
+    const result = await blogService.getBlogs(page);
     res.status(200).send(result);
   } catch (error) {
     console.log(error);
@@ -93,5 +94,66 @@ export async function getNewBlogs(req, res) {
   } catch (error) {
     console.log(error);
     res.status(500).send({ error: error.message });
+  }
+}
+
+export async function getPopularBlogs(req, res) {
+  try {
+    const result = await blogService.getPopularBlogs();
+    res.status(200).send(result);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ error: error.message });
+  }
+}
+
+export async function searchByName(req, res) {
+  try {
+    const title = req.body.title;
+    const result = await blogService.searchByName(title);
+    res.status(200).send(result);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ error: error.message });
+  }
+}
+
+export async function getComments(req, res) {
+  try {
+    const blogId = req.params.blogId;
+    const result = await blogService.getComments(blogId);
+    res.status(200).send(result);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ error: error.message });
+  }
+}
+
+export async function createComment(req, res){
+  const t = await SequelizeInstance.transaction();
+  try {
+    const dataObj = req.body;
+    const result = await blogService.createComment(dataObj);
+    res.status(200).send(result);
+    t.commit();
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ error: error.message });
+    t.rollback();
+  }
+}
+
+export async function updateComment(req, res) {
+  const t = await SequelizeInstance.transaction();
+  try {
+    const commentId = req.params.commentId;
+    const content = req.body.content;
+    const blog = await blogService.updateComment(commentId, content);
+    res.status(200).send(blog);
+    await t.commit();
+  } catch (error) {
+    await t.rollback();
+    console.log(error);
+    res.status(404).send(error);
   }
 }

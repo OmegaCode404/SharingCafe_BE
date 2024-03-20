@@ -7,12 +7,34 @@ export async function getUserMatchByInterest(req, res, next) {
     const offset = req.query.offset || null;
     let result = null;
     if (limit !== null && offset !== null)
-      result = userService.getUserMatchByInterestPaging(
+      result = await userService.getUserMatchByInterestPaging(
         loginUser.user_id,
         limit,
         offset,
       );
-    else result = userService.getUserMatchByInterest(loginUser.user_id);
+    else result = await userService.getUserMatchByInterest(loginUser.user_id);
+    res.status(200).send(result);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ error: error.message });
+  }
+}
+export async function getUserMatchWithStatus(req, res, next) {
+  try {
+    const loginUser = req.loginUser;
+    const result = await userService.getUserMatchWithStatus(loginUser.user_id);
+    res.status(200).send(result);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ error: error.message });
+  }
+}
+export async function getUserMatchWithPendingStatus(req, res, next) {
+  try {
+    const loginUser = req.loginUser;
+    const result = await userService.getUserMatchWithPendingStatus(
+      loginUser.user_id,
+    );
     res.status(200).send(result);
   } catch (error) {
     console.log(error);

@@ -1,8 +1,8 @@
 import * as eventDAL from '../DAL/eventDAL.js';
 import { v4 as uuidv4 } from 'uuid';
 
-export async function getEvents(dataObj) {
-  return await eventDAL.getEvents(dataObj);
+export async function getEvents(title, date) {
+  return await eventDAL.getEvents(title, date);
 }
 
 export async function getEvent(eventId) {
@@ -41,8 +41,6 @@ export async function getPopularEvents() {
   return await eventDAL.getPopularEvents();
 }
 
-export async function updateEventImage(eventId, fileData){
-  const event = await getEvent(eventId);
-  if (!event) throw new Error('Event not found !!!');
-  return await eventDAL.updateEventImage(eventId, fileData);
+export async function updateImage(fileData){
+  return await eventDAL.updateImage(fileData);
 }

@@ -37,7 +37,7 @@ export async function getUserDetails(email, password) {
   return user;
 }
 
-export async function register(userId, user) {
+export async function register(userId, user){
   return await User.create({
     user_id: userId,
     user_name: user.user_name,
@@ -45,38 +45,45 @@ export async function register(userId, user) {
     phone: user.phone,
     email: user.email,
     Bio: user.Bio,
-    role_id: '6150886b-5920-4884-8e43-d4efb62f89d3',
+    is_available: true,
+    role_id: "6150886b-5920-4884-8e43-d4efb62f89d3"
   });
 }
 
-export async function getUserByPhone(phone) {
-  const sqlQuery = `
-  select 
-    u.*
-  from 
-    "user" u
-   where u.phone = '${phone}'
-  `;
-  const result = await SequelizeInstance.query(sqlQuery, {
-    type: SequelizeInstance.QueryTypes.SELECT,
-    raw: true,
+export async function getUserByPhone(phone){
+  // const sqlQuery = `
+  // select 
+  //   u.*
+  // from 
+  //   "user" u
+  //  where u.phone = '${phone}'
+  // `;
+  // const result = await SequelizeInstance.query(sqlQuery, {
+  //   type: SequelizeInstance.QueryTypes.SELECT,
+  //   raw: true,
+  // });
+  // return result;
+  return await User.findOne({
+    where: {phone: phone}
   });
-  return result;
 }
 
-export async function getUserByEmail(email) {
-  const sqlQuery = `
-  select 
-    u.*
-  from 
-    "user" u
-   where u.email = '${email}'
-  `;
-  const result = await SequelizeInstance.query(sqlQuery, {
-    type: SequelizeInstance.QueryTypes.SELECT,
-    raw: true,
+export async function getUserByEmail(email){
+  // const sqlQuery = `
+  // select 
+  //   u.*
+  // from 
+  //   "user" u
+  //  where u.email = '${email}'
+  // `;
+  // const result = await SequelizeInstance.query(sqlQuery, {
+  //   type: SequelizeInstance.QueryTypes.SELECT,
+  //   raw: true,
+  // });
+  // return result;
+  return await User.findOne({
+    where: {email: email}
   });
-  return result;
 }
 
 export async function getUser(userId) {
@@ -201,26 +208,20 @@ export async function getUserDetailsById(userId) {
 }
 export async function getUserMatchByInterest(userId) {
   const sqlQuery = `
-WITH base AS (
-  SELECT 
-    u.user_id,
-    array_agg(ui.interest_id) AS interests
-  FROM 
-    public."user" u 
-  LEFT JOIN 
-    user_interest ui ON u.user_id = ui.user_id 
-  WHERE u.user_id = '${userId}'
-  GROUP BY u.user_id
-)
-SELECT 
-  u.*
-FROM 
-  public."user" u
-LEFT JOIN 
-  user_interest ui ON u.user_id = ui.user_id
-WHERE 
-  u.user_id != (SELECT user_id FROM base) 
-  AND ui.interest_id = ANY ((SELECT interests FROM base)::uuid[]);
+    SELECT 
+    u.*
+    FROM 
+    public."user" u
+    inner JOIN 
+    user_interest ui ON u.user_id = ui.user_id
+    WHERE 
+    u.user_id != '${userId}'
+    AND ui.interest_id IN (
+    select 
+      interest_id
+    from 
+      user_interest
+    where user_id = '${userId}')
   `;
 
   const userDetails = await SequelizeInstance.query(sqlQuery, {
@@ -231,30 +232,70 @@ WHERE
   return userDetails;
 }
 
+export async function getUserMatchWithStatus(userId) {
+  const sqlQuery = `
+    select 
+      *
+    from 
+      public.user u
+    inner join 
+      user_match um
+      on um.user_id_liked = u.user_id 
+    inner join 
+      user_match_status ums 
+      on um.user_match_status_id  = ums.user_match_status_id 
+    where um.current_user_id  = '${userId}'
+      `;
+  const userDetails = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
+
+  return userDetails;
+}
+
+export async function getUserMatchWithPendingStatus(userId) {
+  const sqlQuery = `
+    select 
+      *
+    from 
+      public.user u
+    inner join 
+      user_match um
+      on um.user_id_liked = u.user_id 
+    inner join 
+      user_match_status ums 
+      on um.user_match_status_id  = ums.user_match_status_id 
+    where 
+      um.current_user_id  = '${userId}'
+      and ums.user_match_status = 'Pending'
+      `;
+  const userDetails = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
+
+  return userDetails;
+}
+
 export async function getUserMatchByInterestPaging(userId, limit, offset) {
   const sqlQuery = `
-WITH base AS (
   SELECT 
-    u.user_id,
-    array_agg(ui.interest_id) AS interests
+    u.*
   FROM 
-    public."user" u 
-  LEFT JOIN 
-    user_interest ui ON u.user_id = ui.user_id 
-  WHERE u.user_id = '${userId}'
-  GROUP BY u.user_id
-)
-SELECT 
-  u.*
-FROM 
-  public."user" u
-LEFT JOIN 
-  user_interest ui ON u.user_id = ui.user_id
-WHERE 
-  u.user_id != (SELECT user_id FROM base) 
-  AND ui.interest_id = ANY ((SELECT interests FROM base)::uuid[])
-limit ${limit}
-offset ${offset}
+    public."user" u
+  inner JOIN 
+    user_interest ui ON u.user_id = ui.user_id
+  WHERE 
+    u.user_id != '${userId}'
+    AND ui.interest_id IN (
+    select 
+      interest_id
+    from 
+      user_interest
+    where user_id = '${userId}')
+  limit ${limit}
+  offset ${offset}
   `;
 
   const userDetails = await SequelizeInstance.query(sqlQuery, {
@@ -334,7 +375,7 @@ export async function getBlogsByInterest(interestId) {
 export async function getSuggestEvent(userId) {
   const sqlQuery = `
   select 
-    e.title, e.background_img, e.time_of_event, e.adress, e.participants_count
+    e.title, e.background_img, e.time_of_event, e.address, e.participants_count
 	from
 		user_interest q
 	join

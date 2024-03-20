@@ -1,8 +1,23 @@
 import { Interest, SequelizeInstance } from '../utility/DbHelper.js';
 
 export async function getInterests() {
-  const interests = await Interest.findAll();
-  return interests;
+  // const interests = await Interest.findAll();
+  // return interests;
+  const sqlQuery = `
+  select 
+    i.* , count(b.interest_id) as num_of_blog 
+  from
+    interest i
+  full join blog b  
+    on b.interest_id = i.interest_id
+  group by i.interest_id
+  order by num_of_blog desc 
+  `;
+  const result = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
+  return result;
 }
 export async function getInterest(interestId) {
   const interest = await Interest.findOne({
@@ -16,8 +31,10 @@ export async function createInterest(interestDetails) {
   return interests;
 }
 export async function updateInterest(interest, interestDetail) {
-  await interest.update({
+  return await interest.update({
     name: interestDetail.name,
+    parent_interest_id: interestDetail.parent_interest_id,
+    image: interestDetail.image
   });
 }
 export async function deleteInterests(interestIds) {
@@ -25,6 +42,21 @@ export async function deleteInterests(interestIds) {
     where: { interest_id: interestIds },
   });
   return deletedInterest;
+}
+
+export async function getParentInterests() {
+  const sqlQuery = `
+  select 
+ 	i.interest_id, i."name" ,i.image
+ from
+ 	interest i
+ where i.parent_interest_id is null
+  `;
+  const result = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
+  return result;
 }
 
 export async function getToppick() {
@@ -44,4 +76,12 @@ export async function getToppick() {
     raw: true,
   });
   return result;
+}
+
+export async function updateImage(interestId, fileData) {
+  return await Interest.update({
+    image: fileData?.path
+  }, {
+    where: {interest_id: interestId}
+  });
 }

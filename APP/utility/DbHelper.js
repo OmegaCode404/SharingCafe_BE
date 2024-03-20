@@ -278,9 +278,11 @@ const Comment = sequelize.define(
     },
     blog_id: {
       type: DataTypes.UUID,
+      allowNull: false,
     },
     user_id: {
       type: DataTypes.UUID,
+      allowNull: false,
     },
     content: {
       type: DataTypes.TEXT,
@@ -558,6 +560,12 @@ const Interest = sequelize.define(
       type: DataTypes.TEXT,
       allowNull: false,
     },
+    parent_interest_id: {
+      type: DataTypes.UUID,
+    },
+    image: {
+      type: DataTypes.TEXT,
+    },
     created_at: {
       type: DataTypes.DATE,
       allowNull: false,
@@ -606,7 +614,6 @@ const Schedule = sequelize.define(
     },
     content: {
       type: DataTypes.TEXT,
-      allowNull: false,
     },
     location: {
       type: DataTypes.TEXT,
@@ -625,6 +632,7 @@ const Schedule = sequelize.define(
     },
     sender_id: {
       type: DataTypes.UUID,
+      allowNull: false,
     },
     receiver_id: {
       type: DataTypes.UUID,

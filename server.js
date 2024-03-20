@@ -9,16 +9,14 @@ import * as userService from './APP/Service/userService.js';
 import jwt from 'jsonwebtoken';
 // Trái tim của app
 const app = express();
-
 dotenv.config();
 const specs = swaggerJSDoc(options);
-
 const PORT = process.env.PORT || 5000;
 const SECRET_KEY = process.env.SECRET_KEY;
 
 // Middleware
-app.use(cors()); // Phải tìm hiểu báo cáo lại
-app.use(express.json()); // Phải tìm hiểu
+app.use(cors());
+app.use(express.json());
 
 const getUserInfoMiddleware = async (req, res, next) => {
   const accessToken =

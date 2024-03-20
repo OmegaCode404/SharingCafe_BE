@@ -7,4 +7,5 @@ export const MATCH_STATUS = {
   PENDING: 'Pending',
   DECLINED: 'Declined',
   ACCEPTED: 'Accepted',
+  DISLIKE: 'Dislike',
 };

@@ -78,3 +78,34 @@ export async function getToppick(req, res) {
     res.status(404).send(e);
   }
 }
+
+export async function getParentInterests(req, res){
+  try {
+    const result = await interestService.getParentInterests();
+    console.log(result);
+    res.status(200).send(result);
+  } catch (e){
+    console.log(e);
+    res.sta
+  }
+}
+
+export async function updateImage(req, res) {
+  const t = await SequelizeInstance.transaction();
+  try {
+    const fileData = req.file;
+    console.log(fileData);
+    if (fileData === undefined) {
+      cloudinary.uploader.destroy(fileData.filename)
+      return res.status(400).send({ error: error.message });
+    }
+    const interestId = req.params.interestId;
+    const user = await interestService.updateImage(interestId, fileData);
+    res.status(200).send(user);
+    await t.commit();
+  } catch (error) {
+    await t.rollback();
+    console.log(error);
+    res.status(404).send(error);
+  }
+}

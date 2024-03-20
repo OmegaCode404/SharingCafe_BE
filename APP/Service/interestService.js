@@ -24,3 +24,13 @@ export async function deleteInterest(interestIds) {
 export async function getToppick(){
   return await interestDAL.getToppick();
 }
+
+export async function getParentInterests(){
+  return await interestDAL.getParentInterests();
+}
+
+export async function updateImage(interestId, fileData){
+  const interest = await getInterest(interestId);
+  if (!interest) throw new Error('Interest not found !!!');
+  return await interestDAL.updateImage(interestId, fileData);
+}
