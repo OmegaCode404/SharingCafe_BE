@@ -92,14 +92,38 @@ const User = sequelize.define(
     profile_avatar: {
       type: DataTypes.TEXT,
     },
-    Bio: {
-      type: DataTypes.JSON,
+    story: {
+      type: DataTypes.TEXT,
     },
     registration: {
       type: DataTypes.DATE,
     },
+    purpose: {
+      type: DataTypes.TEXT,
+    },
+    favorite_location: {
+      type: DataTypes.TEXT,
+    },
     role_id: {
       type: DataTypes.UUID,
+    },
+    gender: {
+      type: DataTypes.BOOLEAN,
+    },
+    age: {
+      type: DataTypes.TEXT,
+    },
+    lat: {
+      type: DataTypes.TEXT,
+    },
+    lng: {
+      type: DataTypes.TEXT,
+    },
+    address: {
+      type: DataTypes.TEXT,
+    },
+    token_id: {
+      type: DataTypes.TEXT,
     },
     is_available: {
       type: DataTypes.BOOLEAN,
@@ -110,6 +134,103 @@ const User = sequelize.define(
     timestamps: false,
   },
 );
+
+const PersonalProblem = sequelize.define(
+  'PersonalProblem',
+  {
+    personal_problem_id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    user_id: {
+      type: DataTypes.UUID,
+    },
+    problem: {
+      type: DataTypes.TEXT,
+    },
+    created_at: {
+      type: DataTypes.DATE,
+    },
+  },
+  {
+    tableName: 'personal_problem',
+    timestamps: false,
+  },
+);
+
+const UnlikeTopic = sequelize.define(
+  'UnlikeTopic',
+  {
+    personal_problem_id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    user_id: {
+      type: DataTypes.UUID,
+    },
+    topic: {
+      type: DataTypes.TEXT,
+    },
+    created_at: {
+      type: DataTypes.DATE,
+    },
+  },
+  {
+    tableName: 'unlike_topic',
+    timestamps: false,
+  },
+);
+
+const FavoriteDrink = sequelize.define(
+  'FavoriteDrink',
+  {
+    favorite_drink_id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    user_id: {
+      type: DataTypes.UUID,
+    },
+    favorite_drink: {
+      type: DataTypes.TEXT,
+    },
+    created_at: {
+      type: DataTypes.DATE,
+    },
+  },
+  {
+    tableName: 'favorite_drink',
+    timestamps: false,
+  },
+);
+
+const FreeTime = sequelize.define(
+  'FreeTime',
+  {
+    personal_problem_id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    user_id: {
+      type: DataTypes.UUID,
+    },
+    topic: {
+      type: DataTypes.TEXT,
+    },
+    created_at: {
+      type: DataTypes.DATE,
+    },
+  },
+  {
+    tableName: 'free_time',
+    timestamps: false,
+  },
+);
+
 const Role = sequelize.define(
   'Role',
   {
@@ -286,6 +407,9 @@ const Comment = sequelize.define(
     },
     content: {
       type: DataTypes.TEXT,
+    },
+    parent_comment_id: {
+      type: DataTypes.UUID,
     },
     created_at: {
       type: DataTypes.DATE,
@@ -530,6 +654,37 @@ const EventReport = sequelize.define(
     timestamps: false,
   },
 );
+const UserReport = sequelize.define(
+  'UserReport',
+  {
+    report_id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    reporter_id: {
+      type: DataTypes.UUID,
+    },
+    user_id: {
+      type: DataTypes.UUID,
+    },
+    content: {
+      type: DataTypes.TEXT,
+    },
+    created_at: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
+    },
+    report_status_id: {
+      type: DataTypes.UUID,
+    },
+  },
+  {
+    tableName: 'user_report',
+    timestamps: false,
+  },
+);
 const ReportStatus = sequelize.define(
   'ReportStatus',
   {
@@ -565,6 +720,9 @@ const Interest = sequelize.define(
     },
     image: {
       type: DataTypes.TEXT,
+    },
+    is_available: {
+      type: DataTypes.BOOLEAN,
     },
     created_at: {
       type: DataTypes.DATE,
@@ -625,7 +783,7 @@ const Schedule = sequelize.define(
     is_accept: {
       type: DataTypes.BOOLEAN,
     },
-    create_at: {
+    created_at: {
       type: DataTypes.DATE,
       allowNull: false,
       defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
@@ -642,6 +800,33 @@ const Schedule = sequelize.define(
     timestamps: false,
   },
 )
+
+const LikeBlog = sequelize.define(
+  'like_blog',
+  {
+    like_blog_id: {
+      type: DataTypes.UUID,
+      primaryKey: true,
+      defaultValue: DataTypes.UUIDV4,
+    },
+    blog_id: {
+      type: DataTypes.UUID,
+      allowNull: false,
+    },
+    user_id: {
+      type: DataTypes.UUID,
+      allowNull: false,
+    },
+    created_at: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+  },
+  {
+    tableName: 'like_blog',
+    timestamps: false,
+  },
+);
 
 User.belongsTo(Role, { foreignKey: 'role_id', as: 'UserRole' });
 
@@ -714,4 +899,10 @@ export {
   Interest,
   UserInterest,
   Schedule,
+  LikeBlog,
+  PersonalProblem,
+  UnlikeTopic,
+  FreeTime,
+  FavoriteDrink,
+  UserReport,
 };

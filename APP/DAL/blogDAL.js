@@ -1,10 +1,17 @@
-import { Blog, SequelizeInstance, Comment } from '../utility/DbHelper.js';
-export async function getBlogs(page) {
+import {
+  Blog,
+  SequelizeInstance,
+  Comment,
+  LikeBlog,
+} from '../utility/DbHelper.js';
+export async function getBlogs(page, title) {
+  let name = title;
+  if (name == null) {name = ''}
   let sqlQuery = '';
-  if (page){
+  if (page) {
     sqlQuery = `
     select 
-      b.*, u.user_name, i.name
+      b.*, u.user_name, i.name, u.profile_avatar
     from 
       blog b 
     join 
@@ -14,12 +21,14 @@ export async function getBlogs(page) {
     join
       "user" u
       on u.user_id = b.user_id
+    where b.title like '%${name}%'
     offset ((${page} - 1 ) * 10) rows 
-    fetch next 10 rows only`
+    fetch next 10 rows only
+    `;
   } else {
     sqlQuery = `
     select 
-      b.*, u.user_name, i.name
+      b.*, u.user_name, i.name, u.profile_avatar
     from 
       blog b 
     join 
@@ -29,6 +38,7 @@ export async function getBlogs(page) {
     join
       "user" u
     on u.user_id = b.user_id
+    where b.title like '%${name}%'
   `;
   }
   const result = await SequelizeInstance.query(sqlQuery, {
@@ -60,67 +70,93 @@ export async function getBlog(blogId) {
   return result;
 }
 
-export async function createBlog(blogId, dataObj){
-    return await Blog.create({
-      blog_id: blogId,
-      user_id: dataObj.user_id,
-      title: dataObj.title,
-      contetn: dataObj.content,
-      image: dataObj.image,
-      likes_count: dataObj.likes_count,
-      comments_count: dataObj.comments_count,
-      is_approve: dataObj.is_approve,
-      is_visible: dataObj.is_visible,
-      interest_id: dataObj.interest_id
-    });
-}
-
-export async function updateBlog(blogId, blogDetails){
-  return await Blog.update({
-    user_id: blogDetails.user_id,
-    title: blogDetails.title,
-    content: blogDetails.content,
-    image: blogDetails.image,
-    likes_count: blogDetails.likes_count,
-    comments_count: blogDetails.comments_count,
-    is_approve: blogDetails.is_approve,
-    is_visible: blogDetails.is_visible,
-    interest_id: blogDetails.interest_id
- }, {
-   where: {blog_id: blogId}
- });
-}
-
-export async function deleteBlog(blogId) {
-    const deletedBlog = await Blog.destroy({
-      where: { blog_id: blogId },
-    });
-    return deletedBlog;
-}
-
-export async function updateImg(blogId, fileData) {
-  return await Blog.update({
-    image: fileData?.path
-  }, {
-    where: {blog_id: blogId}
+export async function createBlog(blogId, dataObj) {
+  return await Blog.create({
+    blog_id: blogId,
+    user_id: dataObj.user_id,
+    title: dataObj.title,
+    contetn: dataObj.content,
+    image: dataObj.image,
+    likes_count: dataObj.likes_count,
+    comments_count: dataObj.comments_count,
+    is_approve: dataObj.is_approve,
+    is_visible: true,
+    interest_id: dataObj.interest_id,
   });
 }
 
-export async function getNewBlogs() {
-  const sqlQuery = `
-  select 
-    b.*, u.user_name, i.name
-  from 
-    blog b 
-  join 
-    interest i 
-    on 1=1 
-    and b.interest_id = i.interest_id
-  join
-    "user" u
-    on u.user_id = b.user_id
-  order by b.created_at desc 
+export async function updateBlog(blogId, blogDetails) {
+  return await Blog.update(
+    {
+      user_id: blogDetails.user_id,
+      title: blogDetails.title,
+      content: blogDetails.content,
+      image: blogDetails.image,
+      likes_count: blogDetails.likes_count,
+      comments_count: blogDetails.comments_count,
+      is_visible: blogDetails.is_visible,
+      interest_id: blogDetails.interest_id,
+    },
+    {
+      where: { blog_id: blogId },
+    },
+  );
+}
+
+export async function deleteBlog(blogId) {
+  const deletedBlog = await Blog.destroy({
+    where: { blog_id: blogId },
+  });
+  return deletedBlog;
+}
+
+export async function updateImg(blogId, fileData) {
+  return await Blog.update(
+    {
+      image: fileData?.path,
+    },
+    {
+      where: { blog_id: blogId },
+    },
+  );
+}
+
+export async function getNewBlogs(page) {
+  let sqlQuery = '';
+  if (page) {
+    sqlQuery = `
+    select 
+      b.*, u.user_name, i.name, u.profile_avatar
+    from 
+      blog b 
+    join 
+      interest i 
+      on 1=1 
+      and b.interest_id = i.interest_id
+    join
+      "user" u
+      on u.user_id = b.user_id
+    order by b.created_at desc 
+    offset ((${page} - 1 ) * 10) rows 
+    fetch next 10 rows only
   `;
+  } else {
+    sqlQuery = `
+    select 
+      b.*, u.user_name, i.name
+    from 
+      blog b 
+    join 
+      interest i 
+      on 1=1 
+      and b.interest_id = i.interest_id
+    join
+      "user" u
+      on u.user_id = b.user_id
+    order by b.created_at desc 
+  `;
+  }
+
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
@@ -128,21 +164,42 @@ export async function getNewBlogs() {
   return result;
 }
 
-export async function getPopularBlogs() {
-  const sqlQuery = `
-  select 
-    b.*, u.user_name, i.name
-  from 
-    blog b 
-  join 
-    interest i 
-    on 1=1 
-    and b.interest_id = i.interest_id
-  join
-    "user" u
-    on u.user_id = b.user_id
-  order by b.likes_count desc 
+export async function getPopularBlogs(page) {
+  let sqlQuery ='';
+  if (page){
+    sqlQuery = `
+    select 
+      b.*, u.user_name, i.name
+    from 
+      blog b 
+    join 
+      interest i 
+      on 1=1 
+      and b.interest_id = i.interest_id
+    join
+      "user" u
+      on u.user_id = b.user_id
+    order by b.likes_count desc
+    offset ((${page} - 1 ) * 10) rows 
+    fetch next 10 rows only
   `;
+  } else {
+    sqlQuery = `
+    select 
+      b.*, u.user_name, i.name
+    from 
+      blog b 
+    join 
+      interest i 
+      on 1=1 
+      and b.interest_id = i.interest_id
+    join
+      "user" u
+    on u.user_id = b.user_id
+    order by b.likes_count desc 
+  `;
+  }
+  
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
@@ -193,16 +250,17 @@ export async function getComments(blogId) {
   return result;
 }
 
-export async function createComment (comment_id, dataObj){
+export async function createComment(comment_id, dataObj) {
   return await Comment.create({
     comment_id: comment_id,
     blog_id: dataObj.blogId,
     user_id: dataObj.userId,
-    content: dataObj.content
+    content: dataObj.content,
+    parent_comment_id: dataObj.parent_comment_id,
   });
 }
 
-export async function getComment(commentId){
+export async function getComment(commentId) {
   const sqlQuery = `
   select 
  	  c.*, u.user_name , u.profile_avatar 
@@ -223,10 +281,53 @@ export async function getComment(commentId){
   return result;
 }
 
-export async function updateComment(commentId, content){
-  return await Comment.update({
-    content: content
-  }, {
-    where: {comment_id: commentId}
+export async function updateComment(commentId, content) {
+  return await Comment.update(
+    {
+      content: content,
+    },
+    {
+      where: { comment_id: commentId },
+    },
+  );
+}
+
+export async function likeBlog(like_blog_id, dataObj) {
+  const sqlQuery = `
+    UPDATE blog 
+    SET likes_count = likes_count + 1
+    WHERE blog_id = '${dataObj.blog_id}'
+  `;
+    const result = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
+  return await LikeBlog.create({
+    like_blog_id: like_blog_id,
+    user_id: dataObj.user_id,
+    blog_id: dataObj.blog_id,
+  });
+}
+
+export async function unlikeBlog(dataObj){
+  const sqlQuery = `
+    UPDATE blog 
+    SET likes_count = likes_count - 1
+    WHERE blog_id = '${dataObj.blog_id}'
+  `;
+    const result = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
+  LikeBlog.destroy({
+    where: {like_blog_id: dataObj.like_blog_id}
   })
+  return result;
+}
+
+export async function deleteComment(commentId) {
+  const deletedComment = await Comment.destroy({
+    where: { comment_id: commentId },
+  });
+  return deletedComment;
 }

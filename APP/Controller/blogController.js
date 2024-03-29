@@ -4,7 +4,8 @@ import { SequelizeInstance } from '../utility/DbHelper.js';
 export async function getBlogs(req, res) {
   try {
     const page = req.query.page;
-    const result = await blogService.getBlogs(page);
+    const title = req.query.title;
+    const result = await blogService.getBlogs(page, title);
     res.status(200).send(result);
   } catch (error) {
     console.log(error);
@@ -89,7 +90,8 @@ export async function updateImg(req, res) {
 
 export async function getNewBlogs(req, res) {
   try {
-    const result = await blogService.getNewBlogs();
+    const page = req.query.page;
+    const result = await blogService.getNewBlogs(page);
     res.status(200).send(result);
   } catch (error) {
     console.log(error);
@@ -99,7 +101,8 @@ export async function getNewBlogs(req, res) {
 
 export async function getPopularBlogs(req, res) {
   try {
-    const result = await blogService.getPopularBlogs();
+    const page = req.query.page;
+    const result = await blogService.getPopularBlogs(page);
     res.status(200).send(result);
   } catch (error) {
     console.log(error);
@@ -150,6 +153,48 @@ export async function updateComment(req, res) {
     const content = req.body.content;
     const blog = await blogService.updateComment(commentId, content);
     res.status(200).send(blog);
+    await t.commit();
+  } catch (error) {
+    await t.rollback();
+    console.log(error);
+    res.status(404).send(error);
+  }
+}
+
+export async function likeBlog(req, res) {
+  const t = await SequelizeInstance.transaction();
+  try {
+    const dataObj = req.body;
+    const result = await blogService.likeBlog(dataObj);
+    res.status(200).send(result);
+    t.commit();
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ error: error.message });
+    t.rollback();
+  }
+}
+
+export async function unLikeBlog(req, res) {
+  const t = await SequelizeInstance.transaction();
+  try {
+    const dataObj = req.body;
+    const result = await blogService.unlikeBlog(dataObj);
+    res.status(200).send(result);
+    t.commit();
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ error: error.message });
+    t.rollback();
+  }
+}
+
+export async function deleteComment(req, res) {
+  const t = await SequelizeInstance.transaction();
+  try {
+    const commentId = req.params.blogId;
+    const comment = await blogService.deleteComment(commentId);
+    res.status(200).send({ comment });
     await t.commit();
   } catch (error) {
     await t.rollback();

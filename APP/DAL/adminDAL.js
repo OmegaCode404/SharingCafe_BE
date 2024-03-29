@@ -1,4 +1,4 @@
-import { Role, SequelizeInstance, User } from '../utility/DbHelper.js';
+import { Role, SequelizeInstance, User, Blog, Event } from '../utility/DbHelper.js';
 
 export async function getAdmDetails(email, password) {
   const user = await User.findOne({
@@ -9,8 +9,16 @@ export async function getAdmDetails(email, password) {
       'phone',
       'email',
       'profile_avatar',
-      'Bio',
+      'story',
       'registration',
+      'gender',
+      'age',
+      'purpose',
+      'favorite_location',
+      'lat',
+      'lng',
+      'address',
+      'token_id',
     ],
     include: [
       {
@@ -40,7 +48,14 @@ export async function getStatics() {
     FROM blog
     UNION
     SELECT 'Event' AS entity_type, COUNT(*) AS entity_count
-    FROM event;`;
+    FROM event
+    union 
+   	select 'Total Matched' as entity_type, count(um.user_match_id) 
+   	from user_match um 
+   	join user_match_status ums 
+   	 on um.user_match_status_id = ums.user_match_status_id
+   	where ums.user_match_status = 'Accepted'
+    `;
   const statics = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
@@ -50,7 +65,8 @@ export async function getStatics() {
 export async function getUsers() {
   const sqlQuery = `
   SELECT 
-    u.*,
+    u.*, count(ums.user_match_status) filter (where user_match_status = 'Accepted') as matched_successed,
+    count(ums.user_match_status) filter (where user_match_status = 'Dislike') as matched_failed,
     json_agg(
         json_build_object(
             'interest_id', ui.interest_id,
@@ -74,6 +90,10 @@ export async function getUsers() {
           ORDER BY 
               ui.user_id, ui.interest_id  
       ) ui ON ui.user_id = u.user_id
+  full join user_match um 
+  	on um.current_user_id = u.user_id 
+  full join user_match_status ums 
+  	on um.user_match_status_id = ums.user_match_status_id 
   GROUP BY 
       u.user_id, u.role_id; 
   `;
@@ -96,6 +116,28 @@ export async function updateUserStatus(userId, userDetails) {
     },
     {
       where: { user_id: userId },
+    },
+  );
+}
+
+export async function updateBlogStatus(blogId, blogDetails) {
+  return await Blog.update(
+    {
+      is_approve: blogDetails.is_approve,
+    },
+    {
+      where: { blog_id: blogId },
+    },
+  );
+}
+
+export async function updateEventStatus(eventId, eventDetails) {
+  return await Event.update(
+    {
+      is_approve: eventDetails.is_approve,
+    },
+    {
+      where: { event_id: eventId },
     },
   );
 }

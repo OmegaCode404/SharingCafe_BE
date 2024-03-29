@@ -79,14 +79,25 @@ export async function getToppick(req, res) {
   }
 }
 
-export async function getParentInterests(req, res){
+export async function getParentInterests(req, res) {
   try {
     const result = await interestService.getParentInterests();
     console.log(result);
     res.status(200).send(result);
-  } catch (e){
+  } catch (e) {
     console.log(e);
-    res.sta
+    res.sta;
+  }
+}
+
+export async function countBlogByInterest(req, res) {
+  try {
+    const result = await interestService.countBlogByInterest();
+    console.log(result);
+    res.status(200).send(result);
+  } catch (e) {
+    console.log(e);
+    res.sta;
   }
 }
 
@@ -96,7 +107,7 @@ export async function updateImage(req, res) {
     const fileData = req.file;
     console.log(fileData);
     if (fileData === undefined) {
-      cloudinary.uploader.destroy(fileData.filename)
+      cloudinary.uploader.destroy(fileData.filename);
       return res.status(400).send({ error: error.message });
     }
     const interestId = req.params.interestId;

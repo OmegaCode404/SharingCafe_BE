@@ -5,7 +5,8 @@ export async function getEvents(req, res) {
   try {
     const title = req.query.title;
     const date = req.query.date;
-    const result = await eventService.getEvents(title, date);
+    const page = req.query.page;
+    const result = await eventService.getEvents(title, date, page);
     res.status(200).send(result);
     // response code ???
   } catch (error) {

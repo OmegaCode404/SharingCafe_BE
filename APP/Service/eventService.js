@@ -1,8 +1,8 @@
 import * as eventDAL from '../DAL/eventDAL.js';
 import { v4 as uuidv4 } from 'uuid';
 
-export async function getEvents(title, date) {
-  return await eventDAL.getEvents(title, date);
+export async function getEvents(title, date, page) {
+  return await eventDAL.getEvents(title, date, page);
 }
 
 export async function getEvent(eventId) {

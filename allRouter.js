@@ -9,7 +9,8 @@ import * as modController from './APP/Controller/modController.js';
 import uploadCloud from './APP/middleware/uploadCloudImg.js';
 import * as chatController from './APP/Controller/chatController.js';
 import * as scheduleController from './APP/Controller/scheduleController.js';
-import wss from './websocket.js';
+import * as reportController from './APP/Controller/reportController.js';
+import * as locationController from './APP/Controller/locationController.js';
 const router = express.Router();
 
 /**
@@ -177,10 +178,10 @@ router.get('/api/admin/statics', admController.getStatics);
  *               email:
  *                 type: string
  *                 format: email
- *                 example: janedoe@gmail.com
+ *                 example: trongtp.user@gmail.com
  *               password:
  *                 type: string
- *                 example: pass
+ *                 example: User@123
  *     responses:
  *       '200':
  *         description: Successful login
@@ -412,9 +413,9 @@ router.get('/api/admin/statics', admController.getStatics);
  *                 type: string
  *                 description: User account password to be updated
  *                 example: 146759
- *               Bio:
+ *               story:
  *                 type: json
- *                 description: User bio to be updated
+ *                 description: User story to be updated
  *                 example: I like fishing
  *     responses:
  *       '200':
@@ -424,6 +425,92 @@ router.get('/api/admin/statics', admController.getStatics);
  *       '500':
  *         description: Internal server error
  */
+/**
+ * @swagger
+ * tags:
+ *   - name: USER SECTION
+ *     description: Operations related to user authentication
+ *
+ * /api/auth/user/update-interests:
+ *   put:
+ *     summary: Update user interests
+ *     description: Update or insert user interests based on the provided data.
+ *     security:
+ *       - BearerAuth: []
+ *     tags:
+ *       - USER SECTION
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               interests:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     interest_id:
+ *                       type: string
+ *                       description: ID of the interest
+ *     responses:
+ *       200:
+ *         description: Interests updated successfully
+ *       400:
+ *         description: Bad request - Invalid request body
+ *       500:
+ *         description: Internal server error
+ */
+
+/**
+ * @swagger
+ * /api/user/token/{userId}:
+ *   get:
+ *     summary: Get device id buy specific user ID
+ *     tags:
+ *       - USER SECTION
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         description: ID of the user to retrieve
+ *         schema:
+ *           type: string
+ *         example: 68ef7af9-28c1-46df-b2e8-df7657c7264b
+ *     responses:
+ *       '200':
+ *         description: Successfully retrieved device id information
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token_id:
+ *                   type: string
+ *                   description: ID of the device
+ *       '404':
+ *         description: User not found
+ *       '500':
+ *         description: Internal server error
+ */
+router.put('/api/auth/user/update-interests', userController.upsertInterests);
+router.put(
+  '/api/auth/user/update-unlike-topic',
+  userController.upsertUnlikeTopics,
+);
+router.put(
+  '/api/auth/user/update-personal-problem',
+  userController.upsertPersonalProblems,
+);
+router.put(
+  '/api/auth/user/update-favorite-drink',
+  userController.upsertFavoriteDrinks,
+);
+router.put('/api/auth/user/update-free-time', userController.upsertFreeTimes);
+
+router.get('/api/user/token/:userId', userController.getTokenId);
+
 router.post('/api/user/login', userController.loginUser);
 router.get('/api/user/:userId', userController.getUser);
 router.put('/api/user/:userId', userController.updateProfile);
@@ -438,6 +525,7 @@ router.get('/api/user/interest/:userInterestId', userController.getInterest);
 router.put('/api/user/interest/:userInterestId', userController.updateInterest);
 router.delete('/api/user/interest', userController.deleteInterest);
 router.post('/api/user/register', userController.register);
+
 /**
  * @swagger
  * /api/user/events/{userId}:
@@ -956,6 +1044,34 @@ router.get('/api/user/events/suggest/:userId', userController.getSuggestEvent);
  *       '500':
  *         description: Internal Server Error
  */
+/**
+ * @swagger
+ * tags:
+ *   - name: INTEREST SECTION
+ *     description: Operations related to interests
+ *
+ * /api/interest/count/blog:
+ *   get:
+ *     summary: Count blogs by interest
+ *     description: Retrieve the count of blogs associated with each interest.
+ *     tags:
+ *       - INTEREST SECTION
+ *     responses:
+ *       200:
+ *         description: Successful response
+ *         content:
+ *           application/json:
+ *             example:
+ *               data:
+ *                 - interest_id: 1
+ *                   parent_id: null
+ *                   blog_count: 10
+ *                 - interest_id: 2
+ *                   parent_id: 1
+ *                   blog_count: 5
+ *       500:
+ *         description: Internal server error
+ */
 router.get('/api/interest', interestController.getInterests);
 router.post('/api/interest', interestController.createInterest);
 router.get('/api/interest/:interestId', interestController.getInterest);
@@ -969,6 +1085,7 @@ router.delete('/api/interest', interestController.deleteInterest);
 router.get('/api/interests/toppick', interestController.getToppick);
 router.get('/api/interests/parent', interestController.getParentInterests);
 router.get('/api/admin/users', admController.getUsers);
+router.get('/api/interest/count/blog', interestController.countBlogByInterest);
 /**
  * @swagger
  * /api/admin/user/{userId}:
@@ -1001,9 +1118,113 @@ router.get('/api/admin/users', admController.getUsers);
  *       '500':
  *         description: Internal server error
  */
+
+/**
+ * @swagger
+ * /api/admin/user/{userId}:
+ *   put:
+ *     summary: Ban a user
+ *     description: Ban a user from system.
+ *     tags:
+ *       - ADMIN SECTION
+ *     parameters:
+ *       - in: path
+ *         name: user_id
+ *         required: true
+ *         description: The ID of the user to ban.
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               is_available:
+ *                 type: bool
+ *                 description: Account status
+ *                 example: false
+ *     responses:
+ *       '200':
+ *         description: User banned successfully
+ *       '404':
+ *         description: User not found
+ *       '500':
+ *         description: Internal Server Error
+ */
+/**
+ * @swagger
+ * /api/admin/blog/{blogId}:
+ *   put:
+ *     summary: Ban a blog
+ *     description: Ban a blog from system.
+ *     tags:
+ *       - ADMIN SECTION
+ *     parameters:
+ *       - in: path
+ *         name: blog_id
+ *         required: true
+ *         description: The ID of the blog to ban.
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               is_approve:
+ *                 type: bool
+ *                 description: Account status
+ *                 example: false
+ *     responses:
+ *       '200':
+ *         description: Blog banned successfully
+ *       '404':
+ *         description: Blog not found
+ *       '500':
+ *         description: Internal Server Error
+ */
+/**
+ * @swagger
+ * /api/admin/event/{eventId}:
+ *   put:
+ *     summary: Ban a blog
+ *     description: Ban a blog from system.
+ *     tags:
+ *       - ADMIN SECTION
+ *     parameters:
+ *       - in: path
+ *         name: event_id
+ *         required: true
+ *         description: The ID of the blog to ban.
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               is_approve:
+ *                 type: bool
+ *                 description: Account status
+ *                 example: false
+ *     responses:
+ *       '200':
+ *         description: Event banned successfully
+ *       '404':
+ *         description: Event not found
+ *       '500':
+ *         description: Internal Server Error
+ */
 router.get('/api/admin/user/:userId', admController.getUser);
 router.put('/api/admin/user/:userId', admController.updateUserStatus);
-
+router.put('/api/admin/blog/:blogId', admController.updateBlogStatus);
+router.put('/api/admin/event/:eventId', admController.updateEventStatus);
 // EVENT SECTION
 //  Phân quyền Authorization -> Middleware handle -> Middleware ???
 /**
@@ -1033,6 +1254,12 @@ router.put('/api/admin/user/:userId', admController.updateUserStatus);
  *             type: string
  *          description: Time of Event
  *          example: 3/4/2024
+ *        - in: query
+ *          name: page
+ *          schema:
+ *             type: integer
+ *          description: The number of page to skip before starting to collect the result set
+ *          example: 1
  *     responses:
  *       200:
  *         description: Successful response
@@ -1723,9 +1950,359 @@ router.post(
  *                 example: "Looking good"
  *     responses:
  *       '201':
- *         description: Comment created successfully
+ *         description: Comment update successfully
  *       '400':
  *         description: Bad request, e.g., missing parameters
+ *       '500':
+ *         description: Internal server error
+ */
+
+/**
+ * @swagger
+ * /api/blog/comment/{commentId}:
+ *   delete:
+ *     summary: Delete a specific comment by ID
+ *     tags:
+ *       - BLOG SECTION
+ *     parameters:
+ *       - in: path
+ *         name: commentId
+ *         required: true
+ *         description: ID of the comment to be deleted
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '204':
+ *         description: Comment deleted successfully
+ *       '404':
+ *         description: Comment not found
+ *       '500':
+ *         description: Internal server error
+ */
+
+/**
+ * @swagger
+ * /api/blogs/like:
+ *   post:
+ *     summary: Like a blog
+ *     tags:
+ *      - BLOG SECTION
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               user_id:
+ *                 type: string
+ *                 description: ID of the user creating the comment
+ *                 example: "6ee3437a-8a2d-4769-8d89-cca128a6a086"
+ *               blogId:
+ *                 type: string
+ *                 description: ID of the blog
+ *                 example: "81a695ef-114c-4c4f-9a5e-5245ddeb75ae"
+ *     responses:
+ *       '201':
+ *         description: Successfully like blog
+ *       '400':
+ *         description: Bad request, e.g., missing parameters
+ *       '500':
+ *         description: Internal server error
+ */
+
+/**
+ * @swagger
+ * /api/blogs/like:
+ *   put:
+ *     summary: Unlike a blog
+ *     tags:
+ *      - BLOG SECTION
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               like_blog_id:
+ *                 type: string
+ *                 description: ID
+ *                 example: "19b18d03-83db-4840-b836-a8ab15ec5e44"
+ *               blog_id:
+ *                 type: string
+ *                 description: ID of the blog
+ *                 example: "6b0883ba-23c4-40a6-8e22-bda8011c4add"
+ *     responses:
+ *       '201':
+ *         description: Successfully unlike blog
+ *       '400':
+ *         description: Bad request, e.g., missing parameters
+ *       '500':
+ *         description: Internal server error
+ */
+
+/**
+ * @swagger
+ * /api/report:
+ *   get:
+ *     summary: Get a list of report status
+ *     tags:
+ *      - REPORT SECTION
+ *     parameters:
+ *        - in: query
+ *          name: page
+ *          schema:
+ *            type: integer
+ *          description: The number of page to skip before starting to collect the result set
+ *          example: 1
+ *     responses:
+ *       '200':
+ *         description: Successful response
+ *         content:
+ *           application/json:
+ *             example:
+ *               - report_status_id: 1
+ *                 title: Sample Report status 1
+ *               - report_status_id: 2
+ *                 title: Sample Report status 2
+ *       '500':
+ *         description: Internal server error
+ */
+
+/**
+ * @swagger
+ * /api/blogs/report:
+ *   get:
+ *     summary: Get a list of blog report
+ *     tags:
+ *      - REPORT SECTION
+ *     responses:
+ *       '200':
+ *         description: Successful response
+ *         content:
+ *           application/json:
+ *             example:
+ *               - blogId: 1
+ *                 title: Sample Blog 1
+ *               - blogId: 2
+ *                 title: Sample Blog 2
+ *       '500':
+ *         description: Internal server error
+ */
+
+/**
+ * @swagger
+ * /api/blogs/report:
+ *   post:
+ *     summary: Create a blog report
+ *     tags:
+ *      - REPORT SECTION
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               reporter_id:
+ *                 type: string
+ *                 description: ID of the user sending report
+ *                 example: "11893856-610c-40e2-bd33-e8410cfc3dc2"
+ *               blog_id:
+ *                 type: string
+ *                 description: ID of the blog
+ *                 example: "9d47a0e3-9f5c-4108-9985-ba52d467a6c2"
+ *               report_status_id:
+ *                 type: string
+ *                 description: ID of the report status
+ *                 example: "6fff783e-d216-48a1-95ca-8d7ae9e1dbc5"
+ *     responses:
+ *       '201':
+ *         description: blog report create successfully
+ *       '400':
+ *         description: Bad request, e.g., missing parameters
+ *       '500':
+ *         description: Internal server error
+ */
+
+/**
+ * @swagger
+ * /api/blogs/report/{reportId}:
+ *   delete:
+ *     summary: Delete a specific report by ID
+ *     tags:
+ *       - REPORT SECTION
+ *     parameters:
+ *       - in: path
+ *         name: reportId
+ *         required: true
+ *         description: ID of the report to be deleted
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '204':
+ *         description: Report deleted successfully
+ *       '404':
+ *         description: Report not found
+ *       '500':
+ *         description: Internal server error
+ */
+
+/**
+ * @swagger
+ * /api/events/report:
+ *   get:
+ *     summary: Get a list of event report
+ *     tags:
+ *      - REPORT SECTION
+ *     responses:
+ *       '200':
+ *         description: Successful response
+ *         content:
+ *           application/json:
+ *             example:
+ *               - eventId: 1
+ *                 title: Sample Event 1
+ *               - eventId: 2
+ *                 title: Sample Event 2
+ *       '500':
+ *         description: Internal server error
+ */
+
+/**
+ * @swagger
+ * /api/events/report:
+ *   post:
+ *     summary: Create a event report
+ *     tags:
+ *      - REPORT SECTION
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               reporter_id:
+ *                 type: string
+ *                 description: ID of the user sending report
+ *                 example: "11893856-610c-40e2-bd33-e8410cfc3dc2"
+ *               event_id:
+ *                 type: string
+ *                 description: ID of the event
+ *                 example: "50b415b6-b874-429c-9f31-56db62ff0c13"
+ *               report_status_id:
+ *                 type: string
+ *                 description: ID of the report status
+ *                 example: "6fff783e-d216-48a1-95ca-8d7ae9e1dbc5"
+ *     responses:
+ *       '201':
+ *         description: Event report create successfully
+ *       '400':
+ *         description: Bad request, e.g., missing parameters
+ *       '500':
+ *         description: Internal server error
+ */
+
+/**
+ * @swagger
+ * /api/events/report/{reportId}:
+ *   delete:
+ *     summary: Delete a specific event report by ID
+ *     tags:
+ *       - REPORT SECTION
+ *     parameters:
+ *       - in: path
+ *         name: reportId
+ *         required: true
+ *         description: ID of the report to be deleted
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '204':
+ *         description: Report deleted successfully
+ *       '404':
+ *         description: Report not found
+ *       '500':
+ *         description: Internal server error
+ */
+
+/**
+ * @swagger
+ * /api/users/report:
+ *   get:
+ *     summary: Get a list of user report
+ *     tags:
+ *      - REPORT SECTION
+ *     responses:
+ *       '200':
+ *         description: Successful response
+ *         content:
+ *           application/json:
+ *             example:
+ *               - user_id: 1
+ *                 user_name: Sample User 1
+ *               - user_id: 2
+ *                 user_name: Sample User 2
+ *       '500':
+ *         description: Internal server error
+ */
+
+/**
+ * @swagger
+ * /api/users/report:
+ *   post:
+ *     summary: Create a user report
+ *     tags:
+ *      - REPORT SECTION
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               reporter_id:
+ *                 type: string
+ *                 description: ID of the user sending report
+ *                 example: "33a43d47-52e2-43c0-acb7-b445a7989e8a"
+ *               user_id:
+ *                 type: string
+ *                 description: ID of the user
+ *                 example: "716ab41a-a01e-46ac-a907-f0c1419f212f"
+ *               report_status_id:
+ *                 type: string
+ *                 description: ID of the report status
+ *                 example: "01872afc-23b5-4890-85d2-b3f0a9d3ce0a"
+ *     responses:
+ *       '201':
+ *         description: User report create successfully
+ *       '400':
+ *         description: Bad request, e.g., missing parameters
+ *       '500':
+ *         description: Internal server error
+ */
+
+/**
+ * @swagger
+ * /api/users/report/{reportId}:
+ *   delete:
+ *     summary: Delete a specific user report by ID
+ *     tags:
+ *       - REPORT SECTION
+ *     parameters:
+ *       - in: path
+ *         name: reportId
+ *         required: true
+ *         description: ID of the report to be deleted
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '204':
+ *         description: Report deleted successfully
+ *       '404':
+ *         description: Report not found
  *       '500':
  *         description: Internal server error
  */
@@ -1742,9 +2319,31 @@ router.put(
 router.get('/api/blogs/popular', blogController.getPopularBlogs);
 router.get('/api/blog/new/blogs', blogController.getNewBlogs);
 router.post('/api/blog/search', blogController.searchByName);
+
 router.get('/api/blog/comment/:blogId', blogController.getComments);
 router.post('/api/blog/comment', blogController.createComment);
 router.put('/api/blog/comment/:commentId', blogController.updateComment);
+router.delete('/api/blog/comment/:commentId', blogController.deleteComment);
+
+router.post('/api/blogs/like', blogController.likeBlog);
+router.put('/api/blogs/like', blogController.unLikeBlog);
+
+router.get('/api/report', reportController.getAllReportStatus);
+
+router.get('/api/blogs/report', reportController.getAllBlogReport);
+router.post('/api/blogs/report', reportController.createBlogReport);
+router.delete('/api/blogs/report/:reportId', reportController.deleteBlogReport);
+
+router.get('/api/events/report', reportController.getAllEventReport);
+router.post('/api/events/report', reportController.createEventReport);
+router.delete(
+  '/api/events/report/:reportId',
+  reportController.deleteEventReport,
+);
+
+router.get('/api/users/report', reportController.getAllUserReport);
+router.post('/api/users/report', reportController.createUserReport);
+router.delete('/api/users/report/:reportId', reportController.deleteUserReport);
 /**
  * @swagger
  * /api/moderator/login:
@@ -1948,22 +2547,55 @@ router.put('/api/moderator/event/:eventId', modController.censorEvent);
  */
 /**
  * @swagger
- * /api/auth/pending-for-matched:
+ * /api/auth/matched:
  *   get:
- *     summary: Get user matches with pending status
- *     description: Retrieve user matches with pending status.
+ *     summary: Get user matches with status
+ *     description: Retrieve user matches with their corresponding status.
  *     security:
  *       - BearerAuth: []
  *     tags:
  *       - MATCH SECTION
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *         description: Status of the user matches
  *     responses:
  *       200:
- *         description: Successful response with user matches and pending status
+ *         description: Successful response with user matches and their statuses
  *       401:
  *         description: Unauthorized, invalid or missing token
  *       500:
  *         description: Internal Server Error
  */
+/**
+ * @swagger
+ * tags:
+ *   - name: MATCH SECTION
+ *     description: Operations related to matches
+ *
+ * /api/match/user-status/count:
+ *   get:
+ *     summary: Count users by status
+ *     description: Retrieve the count of users based on their match status.
+ *     tags:
+ *       - MATCH SECTION
+ *     responses:
+ *       200:
+ *         description: Successful response
+ *         content:
+ *           application/json:
+ *             example:
+ *               data:
+ *                 - user_match_status: "liked"
+ *                   status_count: 10
+ *                 - user_match_status: "matched"
+ *                   status_count: 5
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/api/match/user-status/count', matchController.countUserByStatus);
 router.get(
   '/api/auth/matches-interest',
   matchController.getUserMatchByInterest,
@@ -2029,28 +2661,168 @@ router.post('/api/user/schedule', scheduleController.createSchedule);
  *       '500':
  *         description: Internal server error
  */
-// wss.on('connection', function connection(ws) {
-//   console.log('WebSocket connection client connected');
+// CHAT SECTION
+/**
+ * @swagger
+ * /api/auth/chat-history:
+ *   get:
+ *     summary: Get chat history
+ *     description: Retrieve chat history based on userId, with pagination using limit and offset.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: userId
+ *         required: true
+ *         description: ID of the user to retrieve chat history for.
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: limit
+ *         required: true
+ *         description: Maximum number of messages to retrieve.
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: offset
+ *         required: true
+ *         description: Offset for pagination.
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       '200':
+ *         description: Successfully retrieved chat history.
+ *       '400':
+ *         description: Bad request. Invalid parameters provided.
+ *       '500':
+ *         description: An internal server error occurred.
+ */
+router.get('/api/auth/chat-history', chatController.getChatHistory);
 
-//   ws.on('message', function incoming(message) {
-//     // Handle different types of messages
-//     try {
-//       const data = JSON.parse(message);
-//       switch (data.type) {
-//         case 'SEND_MESSAGE':
-//           chatController.sendMessage(data.payload);
-//           break;
-//         default:
-//           console.log('Unknown message type');
-//       }
-//     } catch (error) {
-//       console.error('Error parsing message:', error);
-//     }
-//   });
+router.put('/api/location/updateCurrentLocation', locationController.updateCurrentLocation,);
+router.get('/api/location/getDistance', locationController.getDistance);
+router.get('/api/location/getRecommendCafe',locationController.getRecommendCafe,);
+/**
+ * @swagger
+ * /api/location/updateCurrentLocation:
+ *   put:
+ *     summary: Put current location
+ *     description: Update current location based on latitude and longitude
+ *     tags:
+ *      - LOCATION SECTION
+ *     parameters:
+ *       - in: query
+ *         name: lat
+ *         required: true
+ *         description: Latitude of current location
+ *         example: 10.841743
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: lng
+ *         required: true
+ *         description: Longtitude of current location
+ *         example: 106.792377
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '200':
+ *         description: Successfully retrieved location.
+ *       '400':
+ *         description: Bad request. Invalid parameters provided.
+ *       '500':
+ *         description: An internal server error occurred.
+ */
 
-//   ws.on('close', () => {
-//     console.log('WebSocket client disconnected');
-//   });
-// });
+/**
+ * @swagger
+ * /api/location/getRecommendCafe:
+ *   get:
+ *     summary: Get Recomment Cafe store between 2 location
+ *     description: Retrieve Recomment Cafe store between 2 location
+ *     tags:
+ *      - LOCATION SECTION
+ *     parameters:
+ *       - in: query
+ *         name: originsLAT
+ *         required: true
+ *         description: Latitude of current location
+ *         example: 10.855287291321535
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: originsLNG
+ *         required: true
+ *         description: Longtitude of current location
+ *         example: 106.6513152333054
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: destinationsLAT
+ *         required: string
+ *         description: Latitude of destination location
+ *         example: 10.838551192432636
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: destinationsLNG
+ *         required: true
+ *         description: Longtitude of destination location
+ *         example: 106.78081128616805
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '200':
+ *         description: Successfully retrieved chat history.
+ *       '400':
+ *         description: Bad request. Invalid parameters provided.
+ *       '500':
+ *         description: An internal server error occurred.
+ */
 
+/**
+ * @swagger
+ * /api/location/getDistance:
+ *   get:
+ *     summary: Get distance between 2 location
+ *     description: Retrieve distance between 2 location
+ *     tags:
+ *      - LOCATION SECTION
+ *     parameters:
+ *       - in: query
+ *         name: originsLAT
+ *         required: true
+ *         description: Latitude of current location
+ *         example: 20.981971
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: originsLNG
+ *         required: true
+ *         description: Longtitude of current location
+ *         example: 105.864323
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: destinationsLAT
+ *         required: true
+ *         description: Latitude of destination location
+ *         example: 21.031011
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: destinationsLNG
+ *         required: true
+ *         description: Longtitude of destination location
+ *         example: 105.783206
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '200':
+ *         description: Successfully retrieved chat history.
+ *       '400':
+ *         description: Bad request. Invalid parameters provided.
+ *       '500':
+ *         description: An internal server error occurred.
+ */
 export default router;

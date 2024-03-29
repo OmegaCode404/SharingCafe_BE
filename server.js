@@ -1,23 +1,35 @@
 import express from 'express';
 import cors from 'cors';
-import allRouter from './allRouter.js';
+import http from 'http';
+import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
-import options from './swagger.js';
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
+import { Server } from 'socket.io';
+import allRouter from './allRouter.js';
+import options from './swagger.js';
 import * as userService from './APP/Service/userService.js';
-import jwt from 'jsonwebtoken';
-// Trái tim của app
+import * as chatController from './APP/Controller/chatController.js';
+import admin from 'firebase-admin';
+import serviceAccount from './serviceAccountKey.json' with { "type": "json" };
 const app = express();
 dotenv.config();
-const specs = swaggerJSDoc(options);
+
 const PORT = process.env.PORT || 5000;
 const SECRET_KEY = process.env.SECRET_KEY;
+
+// Create HTTP server
+const server = http.createServer(app);
+
+// Swagger configuration
+const specs = swaggerJSDoc(options);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
+// Middleware to extract user information from JWT token
 const getUserInfoMiddleware = async (req, res, next) => {
   const accessToken =
     req.headers.authorization && req.headers.authorization.split(' ')[1];
@@ -28,6 +40,7 @@ const getUserInfoMiddleware = async (req, res, next) => {
       accessToken: accessToken,
     });
   }
+
   try {
     const decodedToken = jwt.verify(accessToken, SECRET_KEY);
     const email = decodedToken.email;
@@ -42,33 +55,30 @@ const getUserInfoMiddleware = async (req, res, next) => {
   }
 };
 
-// Define an array of routes that require authentication
-const authenticatedRoutes = ['/api/auth/'];
-
 // Middleware for authentication
+const authenticatedRoutes = ['/api/auth/'];
 app.use(async (req, res, next) => {
   const requestedRoute = req.path;
   const authCheck = authenticatedRoutes.some((prefix) =>
     requestedRoute.includes(prefix),
   );
+
   if (authCheck) {
     await getUserInfoMiddleware(req, res, next);
   } else {
     next();
   }
 });
-// Routes   -> API :  METHOD + URL
-// METHOD : GET  && URL : /
+
+// Routes
 app.get('/', (req, res) => {
   res.send('Welcome to the Sharing_Coffee_CAPSTONE🤣🤣🤣');
 });
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
-// API Kích hoạt library
 
 app.use(allRouter);
 
 // Error Handling Middleware
-app.use(function (err, req, res, next) {
+app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(err.status || 500).json({
     errors: {
@@ -79,20 +89,37 @@ app.use(function (err, req, res, next) {
 });
 
 // 404 Not Found Handling
-app.use(function (req, res, next) {
+app.use((req, res, next) => {
   const err = new Error('Not Found');
   err.status = 404;
   next(err);
 });
 
-// Server Start
-const server = app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+// Initialize Socket.io
+const io = new Server(server);
+
+// Socket.io handling
+io.on('connection', (socket) => {
+  console.log('Socket.io client connected');
+  // Accessing data from headers
+  const accessToken = socket.handshake.headers['authorization'];
+
+  // Log the header value
+  console.log('Authorization header:', accessToken);
+  socket.on('message', async (data) => {
+    console.log('Received data:', data);
+    const messageId = await chatController.saveMessage(data);
+    const message = await chatController.getMessage(messageId);
+    io.emit('message', message);
+  });
 });
 
-// Upgrade HTTP server to WebSocket server
-server.on('upgrade', (request, socket, head) => {
-  wss.handleUpgrade(request, socket, head, (ws) => {
-    wss.emit('connection', ws, request);
-  });
+// Initialize Firebase
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
+// Start the HTTP server
+server.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
 });

@@ -78,3 +78,33 @@ export async function updateUserStatus(req, res) {
     res.status(404).send(error);
   }
 }
+
+export async function updateBlogStatus(req, res) {
+  const t = await SequelizeInstance.transaction();
+  try {
+    const blogId = req.params.blogId;
+    const blogDetails = req.body;
+    const user = await admService.updateBlogStatus(blogId, blogDetails);
+    res.status(200).send(user);
+    await t.commit();
+  } catch (error) {
+    await t.rollback();
+    console.log(error);
+    res.status(404).send(error);
+  }
+}
+
+export async function updateEventStatus(req, res) {
+  const t = await SequelizeInstance.transaction();
+  try {
+    const eventId = req.params.eventId;
+    const eventDetails = req.body;
+    const user = await admService.updateEventStatus(eventId, eventDetails);
+    res.status(200).send(user);
+    await t.commit();
+  } catch (error) {
+    await t.rollback();
+    console.log(error);
+    res.status(404).send(error);
+  }
+}

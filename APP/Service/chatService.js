@@ -6,6 +6,14 @@ export async function viewMessage(dataObj) {
 }
 
 export async function saveMessage(messageData) {
-  const message = await chatDAL.saveMessage(messageData, is_read);
-  return message;
+  const messageId = uuidv4();
+  const message = await chatDAL.saveMessage(messageId, messageData);
+  return messageId;
+}
+export async function getChatHistory(userIdFrom, userIdTo, limit, offset) {
+  return await chatDAL.getChatHistory(userIdFrom, userIdTo, limit, offset);
+}
+
+export async function getMessage(messageId) {
+  return await chatDAL.getMessage(messageId);
 }

@@ -1,7 +1,7 @@
 import * as blogDAL from '../DAL/blogDAL.js';
 import { v4 as uuidv4 } from 'uuid';
-export async function getBlogs(page){
-    return await blogDAL.getBlogs(page);
+export async function getBlogs(page, title){
+    return await blogDAL.getBlogs(page, title);
 }
 
 export async function getBlog(blogId){
@@ -31,12 +31,12 @@ export async function updateImg(blogId, fileData){
     return await blogDAL.updateImg(blogId, fileData);
 }
 
-export async function getNewBlogs(){
-    return await blogDAL.getNewBlogs();
+export async function getNewBlogs(page){
+    return await blogDAL.getNewBlogs(page);
 }
 
-export async function getPopularBlogs(){
-    return await blogDAL.getPopularBlogs();
+export async function getPopularBlogs(page){
+    return await blogDAL.getPopularBlogs(page);
 }
 
 export async function searchByName(title){
@@ -62,4 +62,23 @@ export async function updateComment(commentId, content){
     const comment = await getComment(commentId);
     if (!comment) throw new Error('Comment not found');
     return await blogDAL.updateComment(commentId, content)
+}
+
+export async function likeBlog(dataObj){
+    const like_blog_id = uuidv4();
+    const blog = await blogDAL.getBlog(dataObj.blog_id);
+    if (!blog) throw new Error('Blog not found !!!');   
+    return await blogDAL.likeBlog(like_blog_id, dataObj);
+}
+
+export async function unlikeBlog(dataObj){
+    const blog = await blogDAL.getBlog(dataObj.blog_id);
+    if (!blog)  throw new Error('Blog not found !!!');   
+    return await blogDAL.unlikeBlog(dataObj);
+}
+
+export async function deleteComment(commentId) {
+    const comment = await getComment(commentId);
+    if (!comment) throw new Error('Comment not found !!!');
+    return await blogDAL.deleteComment(commentId);
 }
