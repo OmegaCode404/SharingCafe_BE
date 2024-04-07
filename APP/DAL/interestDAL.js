@@ -1,8 +1,6 @@
 import { Interest, SequelizeInstance } from '../utility/DbHelper.js';
 
 export async function getInterests() {
-  // const interests = await Interest.findAll();
-  // return interests;
   const sqlQuery = `
   select 
     i.* , count(b.interest_id) as num_of_blog 
@@ -35,6 +33,7 @@ export async function updateInterest(interest, interestDetail) {
     name: interestDetail.name,
     parent_interest_id: interestDetail.parent_interest_id,
     image: interestDetail.image,
+    is_available: interestDetail.is_available,
   });
 }
 export async function deleteInterests(interestIds) {
@@ -47,10 +46,13 @@ export async function deleteInterests(interestIds) {
 export async function getParentInterests() {
   const sqlQuery = `
   select 
- 	i.interest_id, i."name" ,i.image
- from
- 	interest i
- where i.parent_interest_id is null
+	i.interest_id, i."name", i.image , COUNT(b.blog_id) AS blog_count
+  from interest i
+  full join blog b 
+  on b.interest_id = i.interest_id 
+  where i.parent_interest_id is null and i.is_available = true
+  group by i.interest_id
+  order by blog_count desc 
   `;
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
@@ -68,6 +70,7 @@ export async function getToppick() {
   join
  	  interest i 
  	  on ui.interest_id = i.interest_id
+  where i.is_available = true
   group by i."name", i.image, i.interest_id 
   order by top_pick desc
   `;

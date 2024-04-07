@@ -3,14 +3,18 @@ import { Event, SequelizeInstance } from '../utility/DbHelper.js';
 export async function getEvents(title, date, page) {
   let sqlQuery = '';
   let name = title;
-  if (name == null) {name = ''}
+  if (name == null) {
+    name = '';
+  }
   let date1 = new Date(date);
-  if (date1 == 'Invalid Date') {date1 = new Date(Date.now())}
+  if (date1 == 'Invalid Date') {
+    date1 = new Date(Date.now());
+  }
   console.log(date1.toUTCString());
-  if (page){
+  if (page) {
     sqlQuery = `
     select 
-      e.*, u.user_name, i.name, i.is_available
+      e.*, u.user_name, i.name
     from
       public."event" e 
     left join 
@@ -27,7 +31,7 @@ export async function getEvents(title, date, page) {
   } else {
     sqlQuery = `
     select 
-      e.*, u.user_name, i.name, i.is_available
+      e.*, u.user_name, i.name
     from
       public."event" e 
     left join 
@@ -38,8 +42,9 @@ export async function getEvents(title, date, page) {
       "user" u
       on u.user_id = e.organizer_id
       where (e.time_of_event >= '${date1.toUTCString()}' or e.end_of_event >= '${date1.toUTCString()}') and e.title  like '%${name}%'
-    `
+    `;
   }
+  console.log(sqlQuery);
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
@@ -86,8 +91,8 @@ export async function createEvent(eventId, dataObj) {
 
 export async function updateImage(fileData) {
   return await {
-    background_img: fileData?.path
-  }
+    background_img: fileData?.path,
+  };
 }
 
 export async function updateEvent(eventId, eventDetails) {
@@ -132,7 +137,7 @@ export async function getNewEvents() {
   join
     "user" u
     on u.user_id = e.organizer_id
-    where e.time_of_event >= '${date.toUTCString()}' or e.end_of_event >= '${date.toUTCString()}'
+    where (e.time_of_event >= '${date.toUTCString()}' or e.end_of_event >= '${date.toUTCString()}') and e.is_approve = true and e.is_visible = true
   order by e.time_of_event
   `;
   const result = await SequelizeInstance.query(sqlQuery, {
@@ -168,9 +173,13 @@ export async function getEventsByDate(dateString) {
 
 export async function getEventsByName(dataObj) {
   let name = dataObj.title;
-  if (name == null) {name = ''}
+  if (name == null) {
+    name = '';
+  }
   let date1 = new Date(dataObj.date);
-  if (date1 == 'Invalid Date') {date1 = new Date('1/1/1000')}
+  if (date1 == 'Invalid Date') {
+    date1 = new Date('1/1/1000');
+  }
   const sqlQuery = `
   select 
     e.*, u.user_name, i."name"
@@ -214,12 +223,114 @@ export async function getPopularEvents() {
   join
     "user" u
     on u.user_id = e.organizer_id
-  where e.time_of_event >= '${date.toISOString()}' or e.end_of_event <= '${date.toISOString()}'
+  where (e.time_of_event >= '${date.toISOString()}' or e.end_of_event <= '${date.toISOString()}') and e.is_approve = true and e.is_visible = true
   order by 
     e.time_of_event desc
     , e.participants_count desc
   limit 10
   `;
+  const result = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
+  return result;
+}
+export async function getEventOccurToday() {
+  const sqlQuery = `
+SELECT 
+    e.event_id, 
+    e.organizer_id, 
+    e.title, 
+    e.description as body, 
+    e.time_of_event, 
+    e."location", 
+    e.participants_count, 
+    e.is_approve, 
+    e.created_at, 
+    e.background_img, 
+    e.is_visible, 
+    e.interest_id, 
+    e.end_of_event, 
+    e.address,
+    EXTRACT(HOUR FROM e.time_of_event) AS event_hour,
+    EXTRACT(MINUTE FROM e.time_of_event) AS event_minute,
+    EXTRACT(SECOND FROM e.time_of_event) AS event_second,
+    string_to_array(u.token_id, ',') as user_token
+FROM 
+    public."event" e
+LEFT JOIN event_participation ep 
+    ON e.event_id = ep.event_id
+LEFT JOIN public."user" u 
+    ON ep.user_id = u.user_id
+WHERE 
+    DATE(e.time_of_event) = CURRENT_DATE
+GROUP BY 
+    e.event_id, 
+    e.organizer_id, 
+    e.title, 
+    e.description, 
+    e.time_of_event, 
+    e."location", 
+    e.participants_count, 
+    e.is_approve, 
+    e.created_at, 
+    e.background_img, 
+    e.is_visible, 
+    e.interest_id, 
+    e.end_of_event, 
+    e.address,
+    event_hour,
+    event_minute,
+    event_second,
+    user_token
+  `;
+  const result = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
+  return result;
+}
+
+
+export async function getUserEvent (title, date, page){
+  let sqlQuery = '';
+  let name = title;
+  if (name == null) {name = ''}
+  let date1 = new Date(date);
+  if (date1 == 'Invalid Date') {date1 = new Date(Date.now())}
+  if (page){
+    sqlQuery = `
+    select 
+      e.*, u.user_name, i.name
+    from
+      public."event" e 
+    left join 
+      interest i 
+      on 1=1 
+      and e.interest_id = i.interest_id
+    join
+      "user" u
+      on u.user_id = e.organizer_id
+      where (e.time_of_event >= '${date1.toDateString()}' or e.end_of_event >= '${date1.toDateString()}') and e.title  like '%${name}%' and e.is_approve = true and e.is_visible = true
+    offset ((${page} - 1) * 5) rows 
+ 	  fetch next 5 rows only
+  `;
+  } else {
+    sqlQuery = `
+    select 
+      e.*, u.user_name, i.name
+    from
+      public."event" e 
+    left join 
+      interest i 
+      on 1=1 
+      and e.interest_id = i.interest_id
+    join
+      "user" u
+      on u.user_id = e.organizer_id
+      where (e.time_of_event >= '${date1.toDateString()}' or e.end_of_event >= '${date1.toDateString()}') and e.title  like '%${name}%' and e.is_approve = true and e.is_visible = true
+    `
+  }
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,

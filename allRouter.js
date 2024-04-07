@@ -11,6 +11,7 @@ import * as chatController from './APP/Controller/chatController.js';
 import * as scheduleController from './APP/Controller/scheduleController.js';
 import * as reportController from './APP/Controller/reportController.js';
 import * as locationController from './APP/Controller/locationController.js';
+import * as notificationController from './APP/Controller/NotificationController.js';
 const router = express.Router();
 
 /**
@@ -118,9 +119,24 @@ const router = express.Router();
  *       500:
  *         description: Internal server error
  */
+
+/**
+ * @swagger
+ * /api/admin/event-statics:
+ *   get:
+ *     summary: Get event statistics for admin
+ *     description: Retrieve statistics data for the admin.
+ *     tags:
+ *       - ADMIN SECTION
+ *     responses:
+ *       200:
+ *         description: Successful response
+ *       500:
+ *         description: Internal server error
+ */
 router.post('/api/admin/login', admController.loginAdmin);
 router.get('/api/admin/statics', admController.getStatics);
-
+router.get('/api/admin/event-statics', admController.getEventStatics)
 /**
  * @swagger
  * /api/user/register:
@@ -182,6 +198,9 @@ router.get('/api/admin/statics', admController.getStatics);
  *               password:
  *                 type: string
  *                 example: User@123
+ *               token:
+ *                 type: string
+ *                 example: xxx.com
  *     responses:
  *       '200':
  *         description: Successful login
@@ -254,19 +273,13 @@ router.get('/api/admin/statics', admController.getStatics);
  */
 /**
  * @swagger
- * /api/user/{userId}:
+ * /api/auth/user/profile:
  *   get:
- *     summary: Get user information by ID
+ *     summary: Get login user information
  *     tags:
  *       - USER SECTION
- *     parameters:
- *       - in: path
- *         name: userId
- *         required: true
- *         description: ID of the user to retrieve
- *         schema:
- *           type: string
- *         example: 6150886b-5920-4884-8e43-d4efb62f89d3
+ *     security:
+ *       - BearerAuth: []
  *     responses:
  *       '200':
  *         description: Successfully retrieved user information
@@ -385,19 +398,13 @@ router.get('/api/admin/statics', admController.getStatics);
  */
 /**
  * @swagger
- * /api/user/{userId}:
+ * /api/auth/user/profile:
  *   put:
  *     summary: Update a user profile
  *     tags:
  *       - USER SECTION
- *     parameters:
- *       - in: path
- *         name: userId
- *         required: true
- *         description: ID of the user profile to be updated
- *         schema:
- *           type: string
- *         example: f6fb30c7-7d61-48ae-8a59-05c53568847c
+ *     security:
+ *       - BearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -414,9 +421,27 @@ router.get('/api/admin/statics', admController.getStatics);
  *                 description: User account password to be updated
  *                 example: 146759
  *               story:
- *                 type: json
+ *                 type: string
  *                 description: User story to be updated
  *                 example: I like fishing
+ *               phone:
+ *                 type: string
+ *                 description: User phone to be updated
+ *               gender:
+ *                 type: string
+ *                 description: User gender to be updated
+ *               age:
+ *                 type: string
+ *                 description: User age to be updated
+ *               purpose:
+ *                 type: string
+ *                 description: User purpose to be updated
+ *               favorite_location:
+ *                  type: string
+ *                  description: User favorite location to be updated
+ *               address:
+ *                  type: string
+ *                  description: User address to be updated
  *     responses:
  *       '200':
  *         description: User updated successfully
@@ -444,25 +469,21 @@ router.get('/api/admin/statics', admController.getStatics);
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               interests:
- *                 type: array
- *                 items:
- *                   type: object
- *                   properties:
- *                     interest_id:
- *                       type: string
- *                       description: ID of the interest
+ *             type: array
+ *             items:
+ *               type: object
+ *               properties:
+ *                 interest_id:
+ *                   type: string
+ *                   description: ID of the interest
  *     responses:
- *       200:
+ *       '200':
  *         description: Interests updated successfully
- *       400:
+ *       '400':
  *         description: Bad request - Invalid request body
- *       500:
+ *       '500':
  *         description: Internal server error
  */
-
 /**
  * @swagger
  * /api/user/token/{userId}:
@@ -494,6 +515,146 @@ router.get('/api/admin/statics', admController.getStatics);
  *       '500':
  *         description: Internal server error
  */
+
+/**
+ * @swagger
+ * tags:
+ *   - name: USER SECTION
+ *     description: Operations related to user authentication
+ *
+ * /api/auth/user/update-unlike-topic:
+ *   put:
+ *     summary: Update user unlike topic
+ *     description: Update or insert user unlike topic based on the provided data.
+ *     security:
+ *       - BearerAuth: []
+ *     tags:
+ *       - USER SECTION
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: array
+ *             items:
+ *               type: object
+ *               properties:
+ *                 topic:
+ *                   type: string
+ *                   description: Topic don't want to discuss
+ *     responses:
+ *       '200':
+ *         description: Unlike-topics updated successfully
+ *       '400':
+ *         description: Bad request - Invalid request body
+ *       '500':
+ *         description: Internal server error
+ */
+
+/**
+ * @swagger
+ * tags:
+ *   - name: USER SECTION
+ *     description: Operations related to user authentication
+ *
+ * /api/auth/user/update-personal-problem:
+ *   put:
+ *     summary: Update user personal problem
+ *     description: Update or insert user personal problem based on the provided data.
+ *     security:
+ *       - BearerAuth: []
+ *     tags:
+ *       - USER SECTION
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: array
+ *             items:
+ *               type: object
+ *               properties:
+ *                 problem:
+ *                   type: string
+ *                   description: Personal problem
+ *     responses:
+ *       '200':
+ *         description: Personal-problems updated successfully
+ *       '400':
+ *         description: Bad request - Invalid request body
+ *       '500':
+ *         description: Internal server error
+ */
+
+/**
+ * @swagger
+ * tags:
+ *   - name: USER SECTION
+ *     description: Operations related to user authentication
+ *
+ * /api/auth/user/update-favorite-drink:
+ *   put:
+ *     summary: Update user favorite drink
+ *     description: Update or insert user favorite drink based on the provided data.
+ *     security:
+ *       - BearerAuth: []
+ *     tags:
+ *       - USER SECTION
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: array
+ *             items:
+ *               type: object
+ *               properties:
+ *                 favorite_drink:
+ *                   type: string
+ *                   description: User favorite drink
+ *     responses:
+ *       '200':
+ *         description: Favorite_drinks updated successfully
+ *       '400':
+ *         description: Bad request - Invalid request body
+ *       '500':
+ *         description: Internal server error
+ */
+
+/**
+ * @swagger
+ * tags:
+ *   - name: USER SECTION
+ *     description: Operations related to user authentication
+ *
+ * /api/auth/user/update-free-time:
+ *   put:
+ *     summary: Update user free time
+ *     description: Update or insert user free time based on the provided data.
+ *     security:
+ *       - BearerAuth: []
+ *     tags:
+ *       - USER SECTION
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: array
+ *             items:
+ *               type: object
+ *               properties:
+ *                 free_time:
+ *                   type: string
+ *                   description: User favorite drink
+ *     responses:
+ *       '200':
+ *         description: Free_times updated successfully
+ *       '400':
+ *         description: Bad request - Invalid request body
+ *       '500':
+ *         description: Internal server error
+ */
 router.put('/api/auth/user/update-interests', userController.upsertInterests);
 router.put(
   '/api/auth/user/update-unlike-topic',
@@ -512,8 +673,8 @@ router.put('/api/auth/user/update-free-time', userController.upsertFreeTimes);
 router.get('/api/user/token/:userId', userController.getTokenId);
 
 router.post('/api/user/login', userController.loginUser);
-router.get('/api/user/:userId', userController.getUser);
-router.put('/api/user/:userId', userController.updateProfile);
+router.get('/api/auth/user/profile', userController.getUser);
+router.put('/api/auth/user/profile', userController.updateProfile);
 router.put(
   '/api/user/avatar/:userId',
   uploadCloud.single('profile_avatar'),
@@ -526,24 +687,31 @@ router.put('/api/user/interest/:userInterestId', userController.updateInterest);
 router.delete('/api/user/interest', userController.deleteInterest);
 router.post('/api/user/register', userController.register);
 
+// swagger for getProfile
 /**
  * @swagger
- * /api/user/events/{userId}:
+ * /api/user/profile/{userId}:
  *   get:
- *     summary: Get events created by specific user by ID
+ *     summary: Get user profile by ID
  *     tags:
- *       - USER EVENTS
+ *       - USER SECTION
  *     parameters:
  *       - in: path
  *         name: userId
  *         required: true
- *         description: ID of the user to retrieve events for
+ *         description: ID of the user to retrieve profile for
  *         schema:
  *           type: string
- *         example: 6150886b-5920-4884-8e43-d4efb62f89d5
+ *         example: d7e9d0ec-0b17-4e8b-8504-118d6d25004d
+ *       - in: query
+ *         name: currentUserId
+ *         description: ID of the current user logged
+ *         schema:
+ *           type: string
+ *         example: 05492fcb-8aa6-4851-8456-8954fa3f23d3
  *     responses:
  *       '200':
- *         description: Successfully retrieved USER EVENTS
+ *         description: Successfully retrieved user profile
  *         content:
  *           application/json:
  *             schema:
@@ -552,25 +720,18 @@ router.post('/api/user/register', userController.register);
  *                 userId:
  *                   type: string
  *                   description: ID of the user
- *                   example: 6150886b-5920-4884-8e43-d4efb62f89d5
- *                 events:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       eventId:
- *                         type: string
- *                         description: ID of the event
- *                         example: 123456
- *                       eventName:
- *                         type: string
- *                         description: Name of the event
- *                         example: Example Event
- *       '404':
- *         description: User not found
- *       '500':
- *         description: Internal server error
+ *                   example: 05492fcb-8aa6-4851-8456-8954fa3f23d3
+ *                 user_name:
+ *                   type: string
+ *                   description: Name of the user
+ *                   example: John Doe
+ *                 email:
+ *                   type: string
+ *                   description: Email of the user
+ *                   example:
  */
+router.get('/api/user/profile/:userId', userController.getProfile);
+
 /**
  * @swagger
  * /api/user/events/interest/{interestId}:
@@ -657,19 +818,13 @@ router.post('/api/user/register', userController.register);
  */
 /**
  * @swagger
- * /api/user/events/suggest/{userId}:
+ * /api/auth/user/events/suggest:
  *   get:
+ *     security:
+ *       - BearerAuth: []
  *     summary: Get suggested events for a user
  *     tags:
  *       - USER EVENTS
- *     parameters:
- *       - in: path
- *         name: userId
- *         required: true
- *         description: ID of the user to get suggested events for
- *         schema:
- *           type: string
- *         example: 6150886b-5920-4884-8e43-d4efb62f89d4
  *     responses:
  *       '200':
  *         description: Successfully retrieved suggested events for the user
@@ -700,19 +855,13 @@ router.post('/api/user/register', userController.register);
  */
 /**
  * @swagger
- * /api/user/events/{userId}:
+ * /api/auth/user/my-event:
  *   get:
+ *     security:
+ *       - BearerAuth: []
  *     summary: Get all events created by a user
  *     tags:
  *       - USER EVENTS
- *     parameters:
- *       - in: path
- *         name: userId
- *         required: true
- *         description: ID of the user to get all events created by
- *         schema:
- *           type: string
- *         example: 6150886b-5920-4884-8e43-d4efb62f89d5
  *     responses:
  *       '200':
  *         description: Successfully retrieved all events created by the user
@@ -741,7 +890,55 @@ router.post('/api/user/register', userController.register);
  *       '500':
  *         description: Internal server error
  */
-router.get('/api/user/events/:userId', userController.getMyEvents);
+
+/**
+ * @swagger
+ * /api/auth/user/event:
+ *   get:
+ *     security:
+ *       - BearerAuth: []
+ *     summary: Get all events
+ *     description: Retrieve a list of all events.
+ *     tags:
+ *       - USER EVENTS
+ *     parameters:
+ *        - in: query
+ *          name: title
+ *          schema:
+ *             type: string
+ *          description: Title of Event
+ *          example: competition
+ *        - in: query
+ *          name: date
+ *          schema:
+ *             type: string
+ *          description: Time of Event
+ *          example: 3/4/2024
+ *        - in: query
+ *          name: page
+ *          schema:
+ *             type: integer
+ *          description: The number of page to skip before starting to collect the result set
+ *          example: 1
+ *     responses:
+ *       200:
+ *         description: Successful response
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: Success
+ *               data:
+ *                 events:
+ *                   - eventId: 1
+ *                     eventName: "Event A"
+ *                   - eventId: 2
+ *                     eventName: "Event B"
+ *       401:
+ *         description: Unauthorized - Missing or invalid token
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/api/auth/user/my-event', userController.getMyEvents);
 router.get(
   '/api/user/events/interest/:interestId',
   userController.getEventsByInterest,
@@ -750,49 +947,9 @@ router.get(
   '/api/user/blogs/interest/:interestId',
   userController.getBlogsByInterest,
 );
-router.get('/api/user/events/suggest/:userId', userController.getSuggestEvent);
-/**
- * @swagger
- * /api/user/events/suggest/{userId}:
- *   get:
- *     summary: Get events for user base on interest
- *     tags:
- *       - USER EVENTS
- *     parameters:
- *       - in: path
- *         name: userId
- *         required: true
- *         description: ID of the user to retrieve events for
- *         schema:
- *           type: string
- *         example: 6150886b-5920-4884-8e43-d4efb62f89d4
- *     responses:
- *       "200":
- *         description: Successfully retrieved events based on the user ID
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   eventId:
- *                     type: string
- *                     description: ID of the event
- *                     example: 123456
- *                   eventTitle:
- *                     type: string
- *                     description: Title of the event
- *                     example: Example Event
- *                   author:
- *                     type: string
- *                     description: Author of the event
- *                     example: John Doe
- *       "404":
- *         description: Events not found for the specified user
- *       "500":
- *         description: Internal server error
- */
+router.get('/api/auth/user/events/suggest', userController.getSuggestEvent);
+router.get('/api/auth/user/event', eventController.getUserEvent);
+
 /**
  * @swagger
  * /api/interest:
@@ -1129,7 +1286,7 @@ router.get('/api/interest/count/blog', interestController.countBlogByInterest);
  *       - ADMIN SECTION
  *     parameters:
  *       - in: path
- *         name: user_id
+ *         name: userId
  *         required: true
  *         description: The ID of the user to ban.
  *         schema:
@@ -1163,7 +1320,7 @@ router.get('/api/interest/count/blog', interestController.countBlogByInterest);
  *       - ADMIN SECTION
  *     parameters:
  *       - in: path
- *         name: blog_id
+ *         name: blogId
  *         required: true
  *         description: The ID of the blog to ban.
  *         schema:
@@ -1191,15 +1348,15 @@ router.get('/api/interest/count/blog', interestController.countBlogByInterest);
  * @swagger
  * /api/admin/event/{eventId}:
  *   put:
- *     summary: Ban a blog
- *     description: Ban a blog from system.
+ *     summary: Ban a Event
+ *     description: Ban a Event from system.
  *     tags:
  *       - ADMIN SECTION
  *     parameters:
  *       - in: path
- *         name: event_id
+ *         name: eventId
  *         required: true
- *         description: The ID of the blog to ban.
+ *         description: The ID of the Event to ban.
  *         schema:
  *           type: string
  *     requestBody:
@@ -1464,46 +1621,6 @@ router.put('/api/admin/event/:eventId', admController.updateEventStatus);
  *       '500':
  *         description: Internal server error
  */
-// /**
-//  * @swagger
-//  * '/api/event/search':
-//  *  post:
-//  *     summary: Get a list of events base on specific keyword
-//  *     tags:
-//  *     - EVENT SECTION
-//  *     requestBody:
-//  *       required: false
-//  *       content:
-//  *         application/json:
-//  *           schema:
-//  *             type: object
-//  *             properties:
-//  *               title:
-//  *                 type: string
-//  *                 description: Keyword for searching
-//  *                 example: competition
-//  *               date:
-//  *                 type: string
-//  *                 description: Date for searching
-//  *                 example: 3/7/2024
-//  *
-//  *     responses:
-//  *       200:
-//  *         description: Success
-//  *         content:
-//  *          application/json:
-//  *            schema:
-//  *              type: array
-//  *              items:
-//  *                type: object
-//  *                properties:
-//  *                  id:
-//  *                    type: string
-//  *                  title:
-//  *                    type: string
-//  *       400:
-//  *         description: Bad request
-//  */
 /**
  * @swagger
  * /api/event/{eventId}:
@@ -1580,15 +1697,46 @@ router.put('/api/admin/event/:eventId', admController.updateEventStatus);
  *       400:
  *         description: Bad request
  */
+
+/**
+ * @swagger
+ * /api/url/event:
+ *  get:
+ *     summary: Get a event url base on event Id
+ *     tags:
+ *     - EVENT SECTION
+ *     parameters:
+ *       - in: query
+ *         name: event_id
+ *         schema:
+ *           type: string
+ *         description: id of event to get url
+ *         example: 2d86fcd8-3380-46ee-8a42-afa03eec77ed
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *          application/json:
+ *            schema:
+ *              type: array
+ *              items:
+ *                type: object
+ *                properties:
+ *                  url:
+ *                    type: string
+ *       400:
+ *         description: Bad request
+ */
 router.get('/api/event', eventController.getEvents);
-// router.post('/api/event/search', eventController.getEventsByName);
+
 router.post('/api/event', eventController.createEvent);
 router.get('/api/event/:eventId', eventController.getEvent);
 router.put('/api/event/:eventId', eventController.updateEvent);
 router.delete('/api/event/:eventId', eventController.deleteEvent);
 router.get('/api/event/new/events', eventController.getNewEvents);
-// router.post('/api/event/date', eventController.getEventsByDate);
+
 router.get('/api/event/popular/events', eventController.getPopularEvents);
+router.get('/api/url/event', eventController.getEventUrl);
 router.post(
   '/api/image',
   uploadCloud.single('background_img'),
@@ -1637,14 +1785,14 @@ router.post(
  *         description: ID of the blog
  *         schema:
  *           type: string
- *         example: fe4e88bd-7211-4285-918e-a1ba14cc946c
+ *         example: f4b02935-dbe1-4b8a-a0af-8cbd92c71c35
  *     responses:
  *       '200':
  *         description: Successful response
  *         content:
  *           application/json:
  *             example:
- *               blogId: fe4e88bd-7211-4285-918e-a1ba14cc946c
+ *               blogId: f4b02935-dbe1-4b8a-a0af-8cbd92c71c35
  *               title: Sample Blog
  *               content: Lorem ipsum dolor sit amet, consectetur adipiscing elit.
  *       '404':
@@ -1771,7 +1919,7 @@ router.post(
  *         description: ID of the blog to be deleted
  *         schema:
  *           type: string
- *         example: fe4e88bd-7211-4285-918e-a1ba14cc946c
+ *         example: f4b02935-dbe1-4b8a-a0af-8cbd92c71c35
  *     responses:
  *       '204':
  *         description: Blog deleted successfully
@@ -1831,17 +1979,13 @@ router.post(
  *     summary: Get a list of blogs base on specific keyword
  *     tags:
  *     - BLOG SECTION
- *     requestBody:
- *       required: false
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               title:
- *                 type: string
- *                 description: Keyword for searching
- *                 example: you
+ *     parameters:
+ *       - in: query
+ *         name: title
+ *         schema:
+ *           type: string
+ *         description: title of blog to search
+ *         example: cuộc sống
  *     responses:
  *       200:
  *         description: Success
@@ -1859,6 +2003,7 @@ router.post(
  *       400:
  *         description: Bad request
  */
+
 /**
  * @swagger
  * /api/blog/comment/{blogId}:
@@ -2044,7 +2189,7 @@ router.post(
 
 /**
  * @swagger
- * /api/report:
+ * /api/user/report:
  *   get:
  *     summary: Get a list of report status
  *     tags:
@@ -2072,7 +2217,7 @@ router.post(
 
 /**
  * @swagger
- * /api/blogs/report:
+ * /api/admin/blogs/report:
  *   get:
  *     summary: Get a list of blog report
  *     tags:
@@ -2093,7 +2238,7 @@ router.post(
 
 /**
  * @swagger
- * /api/blogs/report:
+ * /api/user/blogs/report:
  *   post:
  *     summary: Create a blog report
  *     tags:
@@ -2128,7 +2273,7 @@ router.post(
 
 /**
  * @swagger
- * /api/blogs/report/{reportId}:
+ * /api/user/blogs/report/{reportId}:
  *   delete:
  *     summary: Delete a specific report by ID
  *     tags:
@@ -2151,7 +2296,7 @@ router.post(
 
 /**
  * @swagger
- * /api/events/report:
+ * /api/admin/events/report:
  *   get:
  *     summary: Get a list of event report
  *     tags:
@@ -2172,7 +2317,7 @@ router.post(
 
 /**
  * @swagger
- * /api/events/report:
+ * /api/user/events/report:
  *   post:
  *     summary: Create a event report
  *     tags:
@@ -2207,7 +2352,7 @@ router.post(
 
 /**
  * @swagger
- * /api/events/report/{reportId}:
+ * /api/user/events/report/{reportId}:
  *   delete:
  *     summary: Delete a specific event report by ID
  *     tags:
@@ -2230,7 +2375,7 @@ router.post(
 
 /**
  * @swagger
- * /api/users/report:
+ * /api/admin/users/report:
  *   get:
  *     summary: Get a list of user report
  *     tags:
@@ -2251,7 +2396,7 @@ router.post(
 
 /**
  * @swagger
- * /api/users/report:
+ * /api/user/users/report:
  *   post:
  *     summary: Create a user report
  *     tags:
@@ -2286,7 +2431,7 @@ router.post(
 
 /**
  * @swagger
- * /api/users/report/{reportId}:
+ * /api/user/users/report/{reportId}:
  *   delete:
  *     summary: Delete a specific user report by ID
  *     tags:
@@ -2306,11 +2451,101 @@ router.post(
  *       '500':
  *         description: Internal server error
  */
+
+/**
+ * @swagger
+ * /api/admin/report:
+ *   get:
+ *     summary: Get a list of report
+ *     tags:
+ *      - REPORT SECTION
+ *     responses:
+ *       '200':
+ *         description: Successful response
+ *         content:
+ *           application/json:
+ *             example:
+ *               - user_id: 1
+ *                 user_name: Sample User 1
+ *               - user_id: 2
+ *                 user_name: Sample User 2
+ *       '500':
+ *         description: Internal server error
+ */
+
+/**
+ * @swagger
+ * /api/url/blog:
+ *  get:
+ *     summary: Get a blog url base on blog Id
+ *     tags:
+ *     - BLOG SECTION
+ *     parameters:
+ *       - in: query
+ *         name: blog_id
+ *         schema:
+ *           type: string
+ *         description: id of blog to get url
+ *         example: ae5b11b2-4e45-4a6d-b669-5ffb3661eda5
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *          application/json:
+ *            schema:
+ *              type: array
+ *              items:
+ *                type: object
+ *                properties:
+ *                  url:
+ *                    type: string
+ *       400:
+ *         description: Bad request
+ */
+/**
+ * @swagger
+ * /api/auth/user/blog:
+ *   get:
+ *     security:
+ *       - BearerAuth: []
+ *     summary: Get a list of blogs for user
+ *     tags:
+ *      - USER BLOGS
+ *     parameters:
+ *        - in: query
+ *          name: title
+ *          schema:
+ *             type: string
+ *          description: Title of Event
+ *          example: cuộc sống
+ *        - in: query
+ *          name: page
+ *          schema:
+ *            type: integer
+ *          description: The number of page to skip before starting to collect the result set
+ *          example: 1
+ *     responses:
+ *       '200':
+ *         description: Successful response
+ *         content:
+ *           application/json:
+ *             example:
+ *               - blogId: 1
+ *                 title: Sample Blog 1
+ *                 content: Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+ *               - blogId: 2
+ *                 title: Sample Blog 2
+ *                 content: Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.
+ *       '500':
+ *         description: Internal server error
+ */
 router.get('/api/blog', blogController.getBlogs);
+router.get('/api/auth/user/blog', blogController.getUserBlog);
 router.get('/api/blog/:blogId', blogController.getBlog);
 router.post('/api/blog', blogController.createBlog);
 router.put('/api/blog/:blogId', blogController.updateBlog);
 router.delete('/api/blog/:blogId', blogController.deleteBlog);
+router.get('/api/url/blog', blogController.getBlogUrl);
 router.put(
   '/api/blog/image/:blogId',
   uploadCloud.single('image'),
@@ -2328,22 +2563,30 @@ router.delete('/api/blog/comment/:commentId', blogController.deleteComment);
 router.post('/api/blogs/like', blogController.likeBlog);
 router.put('/api/blogs/like', blogController.unLikeBlog);
 
-router.get('/api/report', reportController.getAllReportStatus);
+router.get('/api/user/report', reportController.getAllReportStatus);
 
-router.get('/api/blogs/report', reportController.getAllBlogReport);
-router.post('/api/blogs/report', reportController.createBlogReport);
-router.delete('/api/blogs/report/:reportId', reportController.deleteBlogReport);
+router.get('/api/admin/report', reportController.getAllReport);
 
-router.get('/api/events/report', reportController.getAllEventReport);
-router.post('/api/events/report', reportController.createEventReport);
+router.get('/api/admin/blogs/report', reportController.getAllBlogReport);
+router.post('/api/user/blogs/report', reportController.createBlogReport);
 router.delete(
-  '/api/events/report/:reportId',
+  '/api/user/blogs/report/:reportId',
+  reportController.deleteBlogReport,
+);
+
+router.get('/api/admin/events/report', reportController.getAllEventReport);
+router.post('/api/user/events/report', reportController.createEventReport);
+router.delete(
+  '/api/user/events/report/:reportId',
   reportController.deleteEventReport,
 );
 
-router.get('/api/users/report', reportController.getAllUserReport);
-router.post('/api/users/report', reportController.createUserReport);
-router.delete('/api/users/report/:reportId', reportController.deleteUserReport);
+router.get('/api/admin/users/report', reportController.getAllUserReport);
+router.post('/api/user/users/report', reportController.createUserReport);
+router.delete(
+  '/api/user/users/report/:reportId',
+  reportController.deleteUserReport,
+);
 /**
  * @swagger
  * /api/moderator/login:
@@ -2516,8 +2759,7 @@ router.put('/api/moderator/event/:eventId', modController.censorEvent);
  *                 format: uuid
  *                 description: The ID of the user whose match status is to be updated.
  *               status:
- *                 type: string
- *                 enum: [Pending, Approved, Rejected]
+ *                 type: boolean
  *                 description: The new status to set for the user's match.
  *     responses:
  *       200:
@@ -2595,6 +2837,80 @@ router.put('/api/moderator/event/:eventId', modController.censorEvent);
  *       500:
  *         description: Internal server error
  */
+/**
+ * @swagger
+ * tags:
+ *   - name: SCHEDULE SECTION
+ *     description: Operations related to schedules
+ *
+ * /api/auth/user/schedule/{anotherUserId}:
+ *   get:
+ *     summary: Retrieve schedule between users
+ *     description: Retrieve the schedule between the authenticated user and another user.
+ *     security:
+ *       - BearerAuth: []
+ *     tags:
+ *       - SCHEDULE SECTION
+ *     parameters:
+ *       - in: path
+ *         name: anotherUserId
+ *         required: true
+ *         description: ID of the another user
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       '200':
+ *         description: Schedule retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *       '404':
+ *         description: Schedule not found
+ *       '500':
+ *         description: Internal Server Error
+ */
+/**
+ * @swagger
+ * tags:
+ *   - name: SCHEDULE SECTION
+ *     description: Operations related to schedules
+ *
+ * /api/user/schedule/status:
+ *   put:
+ *     summary: Change status of schedule
+ *     description: Change status of schedule
+ *     tags:
+ *       - SCHEDULE SECTION
+ *     parameters:
+ *       - in: query
+ *         name: is_accept
+ *         required: true
+ *         description: status of schedule
+ *         schema:
+ *           type: boolean
+ *       - in: query
+ *         name: schedule_id
+ *         required: true
+ *         description: schedule id
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '200':
+ *         description: Schedule retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *       '404':
+ *         description: Schedule not found
+ *       '500':
+ *         description: Internal Server Error
+ */
+router.put('/api/user/schedule/status', scheduleController.changeStatus);
 router.get('/api/match/user-status/count', matchController.countUserByStatus);
 router.get(
   '/api/auth/matches-interest',
@@ -2613,6 +2929,10 @@ router.put('/api/auth/matching-status', matchController.updateUserMatchStatus);
 router.post('/api/user/message', chatController.viewMessage);
 
 router.post('/api/user/schedule', scheduleController.createSchedule);
+router.get(
+  '/api/auth/user/schedule/:anotherUserId',
+  scheduleController.getScheduleBetweenUsers,
+);
 /**
  * @swagger
  * tags:
@@ -2699,18 +3019,33 @@ router.post('/api/user/schedule', scheduleController.createSchedule);
  */
 router.get('/api/auth/chat-history', chatController.getChatHistory);
 
-router.put('/api/location/updateCurrentLocation', locationController.updateCurrentLocation,);
+router.put(
+  '/api/location/updateCurrentLocation',
+  locationController.updateCurrentLocation,
+);
 router.get('/api/location/getDistance', locationController.getDistance);
-router.get('/api/location/getRecommendCafe',locationController.getRecommendCafe,);
+router.get(
+  '/api/location/getRecommendCafe',
+  locationController.getRecommendCafe,
+);
 /**
  * @swagger
  * /api/location/updateCurrentLocation:
  *   put:
  *     summary: Put current location
  *     description: Update current location based on latitude and longitude
+ *     security:
+ *       - BearerAuth: []
  *     tags:
  *      - LOCATION SECTION
  *     parameters:
+ *       - in: query
+ *         name: userId
+ *         required: true
+ *         description: ID of the user
+ *         schema:
+ *           type: string
+ *         example: b43cc80d-9c56-40c0-b170-4950b8cb702e
  *       - in: query
  *         name: lat
  *         required: true
@@ -2744,31 +3079,17 @@ router.get('/api/location/getRecommendCafe',locationController.getRecommendCafe,
  *      - LOCATION SECTION
  *     parameters:
  *       - in: query
- *         name: originsLAT
+ *         name: userIdA
  *         required: true
- *         description: Latitude of current location
- *         example: 10.855287291321535
+ *         description: UserId of A
+ *         example: 05492fcb-8aa6-4851-8456-8954fa3f23d3
  *         schema:
  *           type: string
  *       - in: query
- *         name: originsLNG
+ *         name: userIdB
  *         required: true
- *         description: Longtitude of current location
- *         example: 106.6513152333054
- *         schema:
- *           type: string
- *       - in: query
- *         name: destinationsLAT
- *         required: string
- *         description: Latitude of destination location
- *         example: 10.838551192432636
- *         schema:
- *           type: string
- *       - in: query
- *         name: destinationsLNG
- *         required: true
- *         description: Longtitude of destination location
- *         example: 106.78081128616805
+ *         description: UserId of B
+ *         example: 68ef7af9-28c1-46df-b2e8-df7657c7264b
  *         schema:
  *           type: string
  *     responses:
@@ -2825,4 +3146,5 @@ router.get('/api/location/getRecommendCafe',locationController.getRecommendCafe,
  *       '500':
  *         description: An internal server error occurred.
  */
+router.get('/test-notification', notificationController.sendNotification);
 export default router;

@@ -14,7 +14,8 @@ const secret_key = process.env.SECRET_KEY;
 
 export async function loginUser(req, res) {
   try {
-    const { email, password } = req.body;
+    const { email, password, token } = req.body;
+    await userService.updateUserToken(email, token);
     const result = await userService.getUserDetails(email, password);
     const userDetails = result.dataValues;
     if (userDetails) {
@@ -22,19 +23,6 @@ export async function loginUser(req, res) {
       const accessToken = jwt.sign({ email: email }, secret_key, {
         expiresIn: '30d',
       });
-      // console.log(notificationToken)
-      // const token = notificationToken;
-      // const title = 'Xin chao';
-      // const body = 'You have a new message!';
-
-      // firebaseHelper.sendNotification(token, title, body)
-      //   .then(response => {
-      //     console.log('Notification sent successfully:', response);
-      //   })
-      //   .catch(error => {
-      //     console.error('Error sending notification:', error);
-      //   });
-
       res.header('Authorization', `Bearer ${accessToken}`);
       userDetails.accessToken = `Bearer ${accessToken}`;
       res.send(userDetails);
@@ -49,7 +37,7 @@ export async function loginUser(req, res) {
 
 export async function getUser(req, res) {
   try {
-    const userId = req.params.userId;
+    const userId = req.loginUser.user_id;
     const result = await userService.getUser(userId);
     res.status(200).send(result);
   } catch (error) {
@@ -128,7 +116,7 @@ export async function deleteInterest(req, res) {
 
 export async function getMyEvents(req, res) {
   try {
-    const userId = req.params.userId;
+    const userId = req.loginUser.user_id;
     const result = await userService.getMyEvents(userId);
     res.status(200).send(result);
   } catch (error) {
@@ -161,7 +149,7 @@ export async function getBlogsByInterest(req, res) {
 
 export async function getSuggestEvent(req, res) {
   try {
-    const userId = req.params.userId;
+    const userId = req.loginUser.user_id;
     const result = await userService.getSuggestEvent(userId);
     res.status(200).send(result);
   } catch (error) {
@@ -173,12 +161,7 @@ export async function getSuggestEvent(req, res) {
 export async function updateProfile(req, res) {
   const t = await SequelizeInstance.transaction();
   try {
-    // const fileData = req.file;
-    // if (fileData === undefined) {
-    //   cloudinary.uploader.destroy(fileData.filename)
-    //   return res.status(400).send({ error: error.message });
-    // }
-    const userId = req.params.userId;
+    const userId = req.loginUser.user_id;
     const profile = req.body;
     const user = await userService.updateProfile(userId, profile);
     res.status(200).send(user);
@@ -194,7 +177,8 @@ export async function upsertInterests(req, res) {
   try {
     const userId = req.loginUser.user_id;
     const interests = req.body;
-    const user = await userService.upsertInterests(userId, interests);
+    await userService.upsertInterests(userId, interests);
+    const user = await userService.getInterests(userId);
     res.status(200).send(user);
     await t.commit();
   } catch (error) {
@@ -224,7 +208,10 @@ export async function upsertPersonalProblems(req, res) {
   try {
     const userId = req.loginUser.user_id;
     const personal_problems = req.body;
-    const user = await userService.upsertPersonalProblems(userId, personal_problems);
+    const user = await userService.upsertPersonalProblems(
+      userId,
+      personal_problems,
+    );
     res.status(200).send(user);
     await t.commit();
   } catch (error) {
@@ -239,7 +226,10 @@ export async function upsertFavoriteDrinks(req, res) {
   try {
     const userId = req.loginUser.user_id;
     const favorite_drinks = req.body;
-    const user = await userService.upsertFavoriteDrinks(userId, favorite_drinks);
+    const user = await userService.upsertFavoriteDrinks(
+      userId,
+      favorite_drinks,
+    );
     res.status(200).send(user);
     await t.commit();
   } catch (error) {
@@ -310,6 +300,18 @@ export async function getTokenId(req, res) {
   try {
     const userId = req.params.userId;
     const result = await userService.getTokenId(userId);
+    res.status(200).send(result);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ error: error.message });
+  }
+}
+
+export async function getProfile(req, res) {
+  try {
+    const userId = req.params.userId;
+    const currentUserId = req.query.currentUserId;
+    const result = await userService.getProfile(userId, currentUserId);
     res.status(200).send(result);
   } catch (error) {
     console.log(error);

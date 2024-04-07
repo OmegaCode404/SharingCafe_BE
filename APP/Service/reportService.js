@@ -43,3 +43,7 @@ export async function createUserReport(dataObj){
 export async function deleteUserReport(reportId) {
     return await reportDAL.deleteUserReport(reportId);
 }
+
+export async function getAllReport(){
+    return await reportDAL.getAllReport();
+}

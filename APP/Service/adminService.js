@@ -18,19 +18,23 @@ export async function getUsers() {
 }
 
 export async function updateUserStatus(userId, userDetails) {
-  const user = adminDAL.getUser(userId);
+  const user = await adminDAL.getUser(userId);
   if (!user) throw new Error('This user does not exist!!');
   return await adminDAL.updateUserStatus(userId, userDetails);
 }
 
 export async function updateBlogStatus(blogId, blogDetails) {
-  const blog = blogDAL.getBlog(blogId);
+  const blog = await blogDAL.getBlog(blogId);
   if (!blog) throw new Error('This blog does not exist!!');
   return await adminDAL.updateBlogStatus(blogId, blogDetails);
 }
 
 export async function updateEventStatus(eventId, eventDetails) {
-  const event = eventDAL.getEvent(eventId);
+  const event = await eventDAL.getEvent(eventId);
   if (!event) throw new Error('This event does not exist!!');
   return await adminDAL.updateEventStatus(eventId, eventDetails);
+}
+
+export async function getEventStatics() {
+  return await adminDAL.getEventStatics();
 }

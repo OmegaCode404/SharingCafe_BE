@@ -38,6 +38,7 @@ export async function getUserDetails(email, password) {
     where: {
       email: email,
       password: password,
+      is_available: true,
     },
     limit: 1,
   });
@@ -108,6 +109,22 @@ export async function getUser(userId) {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
   });
+  return result;
+}
+export async function updateUserToken(email, token) {
+  const sqlQuery = `
+      UPDATE public."user" 
+      SET 
+        token_id = :token
+      WHERE 
+        email = :email
+    `;
+
+  const [result] = await SequelizeInstance.query(sqlQuery, {
+    replacements: { email: email, token: token },
+    type: SequelizeInstance.QueryTypes.UPDATE,
+  });
+
   return result;
 }
 
@@ -227,79 +244,7 @@ export async function getUserDetailsById(userId) {
   GROUP BY 
     u.user_id, u.role_id;  
   `;
-
-  const sqlQuery1 = `
-  SELECT 
-  u.*, count(ums.user_match_status) filter (where ums.user_match_status = 'Accepted') as matched_successed,
-  count(ums.user_match_status) filter (where ums.user_match_status = 'Failed') as matched_failed,
-  json_agg(
-      json_build_object(
-          'interest_id', ui.interest_id,
-          'interest_name', ui.name
-      )
-    ) AS interest_list,
-    json_agg(
-        json_build_object(
-            'personal_problem_id', pp.personal_problem_id ,
-            'personal_proplem', pp.problem 
-        )
-      ) AS personal_problem,
-    json_agg(
-        json_build_object(
-            'unlike_topic_id', ut.unlike_topic_id  ,
-            'unlike_topic', ut.topic  
-        )
-      ) AS unlike_topic,
-    json_agg(
-        json_build_object(
-            'favorite_drink_id', fd.favorite_drink_id  ,
-            'favorite_drink', fd.favorite_drink  
-        )
-      ) AS favorite_drink ,
-      json_agg(
-        json_build_object(
-            'free_time_id', ft.free_time_id  ,
-            'free_time', ft.free_time  
-        )
-      ) AS free_time
-  FROM 
-    public."user" u 
-  INNER JOIN 
-    (SELECT * FROM role WHERE role_name = 'USER') r ON u.role_id = r.role_id
-  full join personal_problem pp
-  	on u.user_id = pp.user_id 
-  full join unlike_topic ut 
- 	  on u.user_id = ut.user_id 
-  full join favorite_drink fd 
-  	on fd.user_id = u.user_id 
-  full join free_time ft 
-  	on ft.user_id = u.user_id 
-  LEFT JOIN 
-    (
-        SELECT 
-            ui.user_id,
-            ui.interest_id,
-            i.name
-        FROM 
-            user_interest ui 
-        INNER JOIN 
-            interest i ON i.interest_id = ui.interest_id
-        ORDER BY 
-            ui.user_id, ui.interest_id  
-    ) ui ON ui.user_id = u.user_id
-  full join user_match um 
-  	on um.current_user_id = u.user_id 
-  full join user_match_status ums 
-  	on um.user_match_status_id = ums.user_match_status_id 
-  full join user_match um2 
-  	on um2.user_id_liked = u.user_id 
-  full join user_match_status ums2 
-  	on um2.user_match_status_id = ums2.user_match_status_id 
-  where u.user_id = '${userId}'
-  GROUP BY 
-    u.user_id
-  `;
-  const userDetails = await SequelizeInstance.query(sqlQuery1, {
+  const userDetails = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
   });
@@ -307,20 +252,14 @@ export async function getUserDetailsById(userId) {
 }
 export async function getUserMatchByInterest(userId) {
   const sqlQuery = `
-    SELECT 
-    u.*
-    FROM 
-    public."user" u
-    inner JOIN 
-    user_interest ui ON u.user_id = ui.user_id
-    WHERE 
-    u.user_id != '${userId}'
-    AND ui.interest_id IN (
-    select 
-      interest_id
-    from 
-      user_interest
-    where user_id = '${userId}')
+   SELECT u.*
+FROM "user" u
+LEFT JOIN user_match m1 ON u.user_id = m1.user_id_liked AND m1.current_user_id = '${userId}'
+LEFT JOIN user_match m2 ON u.user_id = m2.current_user_id AND m2.user_id_liked = '${userId}'
+LEFT JOIN user_interest i ON u.user_id = i.user_id AND i.interest_id IN (SELECT interest_id FROM user_interest WHERE user_id = '${userId}')
+WHERE m1.user_id_liked IS NULL
+  AND m2.current_user_id IS NULL
+  AND i.user_id IS NULL;
   `;
 
   const userDetails = await SequelizeInstance.query(sqlQuery, {
@@ -349,7 +288,6 @@ export async function getUserMatchWithStatus(userId, status) {
   if (status) {
     sqlQuery += ` AND ums.user_match_status = '${status}'`;
   }
-
   const userDetails = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
@@ -384,23 +322,53 @@ export async function getUserMatchWithPendingStatus(userId) {
 
 export async function getUserMatchByInterestPaging(userId, limit, offset) {
   const sqlQuery = `
-  SELECT 
+SELECT
     u.*
-  FROM 
-    public."user" u
-  inner JOIN 
-    user_interest ui ON u.user_id = ui.user_id
-  WHERE 
-    u.user_id != '${userId}'
-    AND ui.interest_id IN (
-    select 
-      interest_id
-    from 
-      user_interest
-    where user_id = '${userId}')
-  limit ${limit}
-  offset ${offset}
-  `;
+FROM
+    "user" u
+LEFT JOIN (
+    SELECT
+        user_match_id,
+        current_user_id,
+        user_id_liked,
+        ums.*
+    FROM
+        public.user_match um
+    INNER JOIN user_match_status ums ON ums.user_match_status_id = um.user_match_status_id
+) m1 ON u.user_id = m1.user_id_liked AND m1.current_user_id = '${userId}'
+LEFT JOIN (
+    SELECT
+        user_match_id,
+        current_user_id,
+        user_id_liked,
+        ums.*
+    FROM
+        public.user_match um
+    INNER JOIN user_match_status ums ON ums.user_match_status_id = um.user_match_status_id
+) m2 ON u.user_id = m2.current_user_id AND m2.user_id_liked = '${userId}'
+LEFT JOIN user_interest i ON u.user_id = i.user_id
+    AND i.interest_id IN (
+        SELECT
+            interest_id
+        FROM
+            user_interest
+        WHERE
+            user_id = '${userId}'
+    )
+WHERE
+    (
+        m1.user_id_liked IS NULL
+        OR m1.user_match_status IS NULL
+        OR m1.user_match_status = 'Pending'
+    )
+    AND (
+        m2.current_user_id IS NULL
+        OR m2.user_match_status IS NULL
+        OR m2.user_match_status = 'Pending'
+    )
+    AND i.user_id IS NULL
+limit ${limit} 
+offset ${offset}`;
 
   const userDetails = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
@@ -413,7 +381,7 @@ export async function getUserMatchByInterestPaging(userId, limit, offset) {
 export async function getMyEvents(userId) {
   const sqlQuery = `
   select 
-    e.event_id, e.title, e.background_img, e.time_of_event, e.address, e.location, e.participants_count
+    e.event_id, e.title, e.background_img, e.time_of_event, e.address, e.location, e.participants_count, e.is_visible, i.name
   from
     public."event" e 
   left join 
@@ -445,7 +413,7 @@ export async function getEventsByInterest(interestId) {
   join
     "user" u
     on e.organizer_id = u.user_id
-  where e.interest_id = '${interestId}'
+  where e.interest_id = '${interestId}' and e.is_approve = true and e.is_visible = true
   `;
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
@@ -467,7 +435,7 @@ export async function getBlogsByInterest(interestId) {
   join
     "user" u
     on u.user_id = b.user_id
-   where b.interest_id = '${interestId}'
+   where b.interest_id = '${interestId}' and b.is_approve = true and b.is_visible = true
   `;
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
@@ -477,9 +445,10 @@ export async function getBlogsByInterest(interestId) {
 }
 
 export async function getSuggestEvent(userId) {
+  const date = new Date(Date.now());
   const sqlQuery = `
   select 
-    e.title, e.background_img, e.time_of_event, e.address, e.participants_count
+    e.title, e.background_img, e.time_of_event, e.address, e.participants_count, i.name
 	from
 		user_interest q
 	join
@@ -490,7 +459,7 @@ export async function getSuggestEvent(userId) {
 		on u.user_id = q.user_id 
 	join "event" e 
 		on e.interest_id = i.interest_id 
-	where u.user_id = '${userId}'
+	where u.user_id = '${userId}' and e.is_approve = true and e.is_visible = true and e.end_of_event >= '${date.toUTCString()}'
   order by e.participants_count desc
   `;
   const result = await SequelizeInstance.query(sqlQuery, {
@@ -549,7 +518,7 @@ export async function deleteUserInterests(userId) {
 export async function upsertInterests(data) {
   const sqlQuery = `
   INSERT INTO public.user_interest (user_interest_id, interest_id, user_id, created_at) 
-  VALUES(gen_random_uuid(), :interest_id, :user_id, now()));
+  VALUES(gen_random_uuid(), :interest_id, :user_id, now())
   `;
   const result = await SequelizeInstance.query(sqlQuery, {
     replacements: data,
@@ -574,13 +543,14 @@ export async function deleteUnlikeTopics(userId) {
 export async function upsertUnlikeTopics(data) {
   const sqlQuery = `
   INSERT INTO public.unlike_topic (unlike_topic_id, user_id, topic, created_at) 
-  VALUES(gen_random_uuid(), :user_id, :unlike_topic, now()));
+  VALUES(gen_random_uuid(), :user_id, :topic, now());
   `;
   const result = await SequelizeInstance.query(sqlQuery, {
     replacements: data,
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
   });
+  console.log(result);
   return result;
 }
 
@@ -599,7 +569,7 @@ export async function deletePersonalProblems(userId) {
 export async function upsertPersonalProblems(data) {
   const sqlQuery = `
   INSERT INTO public.personal_problem (personal_problem_id, user_id, problem, created_at) 
-  VALUES(gen_random_uuid(), :user_id, :problem, now()));
+  VALUES(gen_random_uuid(), :user_id, :problem, now());
   `;
   const result = await SequelizeInstance.query(sqlQuery, {
     replacements: data,
@@ -612,10 +582,9 @@ export async function upsertPersonalProblems(data) {
 export async function deleteFavoriteDrinks(userId) {
   const sqlQuery = `
   DELETE FROM public.favorite_drink
-  WHERE user_id = :userId
+  WHERE user_id = '${userId}'
   `;
   const result = await SequelizeInstance.query(sqlQuery, {
-    replacements: userId,
     type: SequelizeInstance.QueryTypes.DELETE,
     raw: true,
   });
@@ -625,7 +594,7 @@ export async function deleteFavoriteDrinks(userId) {
 export async function upsertFavoriteDrinks(data) {
   const sqlQuery = `
   INSERT INTO public.favorite_drink (favorite_drink_id, user_id, favorite_drink, created_at) 
-  VALUES(gen_random_uuid(), :user_id, :favorite_drink, now()));
+  VALUES(gen_random_uuid(), :user_id, :favorite_drink, now());
   `;
   const result = await SequelizeInstance.query(sqlQuery, {
     replacements: data,
@@ -638,10 +607,9 @@ export async function upsertFavoriteDrinks(data) {
 export async function deleteFreeTimes(userId) {
   const sqlQuery = `
   DELETE FROM public.free_time
-  WHERE user_id = :userId
+  WHERE user_id = '${userId}'
   `;
   const result = await SequelizeInstance.query(sqlQuery, {
-    replacements: userId,
     type: SequelizeInstance.QueryTypes.DELETE,
     raw: true,
   });
@@ -651,7 +619,7 @@ export async function deleteFreeTimes(userId) {
 export async function upsertFreeTimes(data) {
   const sqlQuery = `
   INSERT INTO public.free_time (free_time_id, user_id, free_time, created_at) 
-  VALUES(gen_random_uuid(), :user_id, :free_time, now()));
+  VALUES(gen_random_uuid(), :user_id, :free_time, now());
   `;
   const result = await SequelizeInstance.query(sqlQuery, {
     replacements: data,
@@ -661,13 +629,64 @@ export async function upsertFreeTimes(data) {
   return result;
 }
 
-export async function getTokenId (userId) {
+export async function getTokenId(userId) {
   return await User.findOne({
-    attributes: [
-      'token_id',
-    ],
+    attributes: ['token_id'],
     where: {
-      user_id:  userId,
-    }
-  })
+      user_id: userId,
+    },
+  });
+}
+
+export async function getLocationByUserId(userId) {
+  return await User.findOne({
+    attributes: ['lat', 'lng'],
+    where: {
+      user_id: userId,
+    },
+  });
+}
+
+// update lat,lng of user
+export async function updateLocation(userId, lat, lng) {
+  return await User.update(
+    {
+      lat: lat,
+      lng: lng,
+    },
+    {
+      where: { user_id: userId },
+    },
+  );
+}
+
+//get profile of userId
+export async function getProfile(userId) {
+  const sqlQuery = `
+  select 
+    u.user_id, u.user_name, u.profile_avatar, u.story, u.gender, u.age, u.purpose, u.favorite_location, u.address,
+    i.interest_id ,
+    i."name" as interest_name,
+    pp.personal_problem_id,
+    pp.problem,
+    ut.unlike_topic_id,
+    ut.topic,
+    fd.favorite_drink_id,
+    fd.favorite_drink,
+    ft.free_time_id,
+    ft.free_time 
+    from public."user" u
+    left join public.user_interest ui on u.user_id = ui.user_id
+    left join public.interest i on i.interest_id = ui.interest_id 
+    left join public.personal_problem pp on pp.user_id = u.user_id 
+    left join public.unlike_topic ut on ut.user_id = u.user_id 
+    left join public.favorite_drink fd on fd.user_id = u.user_id
+    left join public.free_time ft on ft.user_id = u.user_id 
+    where u.user_id = '${userId}'
+    `;
+  const result = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
+  return result;
 }

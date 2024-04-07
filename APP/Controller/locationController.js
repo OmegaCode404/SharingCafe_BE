@@ -26,14 +26,26 @@ const apiKey = 'KnB6OOmQcQpYSTnqzYhjqUmcGSBKUob1cDF9oOPw';
 
 // pages/api/getCurrentLocation.js
 
-export async function updateCurrentLocation(req, res) {//sửa thành phương thức update 
+export async function updateCurrentLocation(req, res) {
+  //sửa thành phương thức update
   if (req.method === 'PUT') {
-    const { lat, lng } = req.query;
+    const { userId, lat, lng } = req.query;
     // Thực hiện xử lý với dữ liệu vị trí ở đây
     console.log('Received location data - Latitude:', lat, 'Longitude:', lng);
-
-    // Phản hồi với dữ liệu đã nhận được
-    res.status(200).json({ message: 'Location data received successfully' });
+    // update location
+    const [affectedCount, affectedRows] = await userService.updateLocation(
+      userId,
+      lat,
+      lng,
+    );
+    console.log(affectedCount);
+    if (affectedCount > 0) {
+      // Phản hồi với dữ liệu đã nhận được
+      res.status(200).json({ message: 'Location data received successfully' });
+    } else {
+      // return error
+      res.status(500).json({ error: 'Failed to update location' });
+    }
   } else {
     // Nếu không phải là phương thức PUT, trả về lỗi "Method Not Allowed"
     res.setHeader('Allow', ['PUT']);
@@ -41,14 +53,14 @@ export async function updateCurrentLocation(req, res) {//sửa thành phương t
   }
 }
 
-
-export async function getDistance(req, res) { // sửa thành db
+export async function getDistance(req, res) {
+  // sửa thành db
   try {
     const originsLAT = req.query.originsLAT;
     const originsLNG = req.query.originsLNG;
     const destinationsLAT = req.query.destinationsLAT;
     const destinationsLNG = req.query.destinationsLNG;
-    const response = await axios.get(`https://rsapi.goong.io/DistanceMatrix?origins=${originsLAT},${originsLNG}&destinations=${destinationsLAT},${destinationsLNG}&vehicle=bike&api_key=${apiKey}`);
+    var response = await userService.getDistance(originsLAT, originsLNG, destinationsLAT, destinationsLNG);
     res.status(200).json(response.data);
   } catch (error) {
     console.error(error);
@@ -58,7 +70,7 @@ export async function getDistance(req, res) { // sửa thành db
 
 // Hàm tính tọa độ điểm ở giữa của một khoảng cách trên mặt cầu
 function tinhDiemGiuaCuaKhoangCach(lat1, lon1, lat2, lon2) {
-  const toRadians = degrees => degrees * (Math.PI / 180);
+  const toRadians = (degrees) => degrees * (Math.PI / 180);
   const R = 6371;
 
   const radLat1 = toRadians(lat1);
@@ -69,9 +81,12 @@ function tinhDiemGiuaCuaKhoangCach(lat1, lon1, lat2, lon2) {
   const dLat = radLat2 - radLat1;
   const dLon = radLon2 - radLon1;
 
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(radLat1) * Math.cos(radLat2) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(radLat1) *
+      Math.cos(radLat2) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   const d = R * c;
 
@@ -83,11 +98,16 @@ function tinhDiemGiuaCuaKhoangCach(lat1, lon1, lat2, lon2) {
 
 export async function getMiddlePoint(req, res) {
   try {
-    const originsLAT = req.query.originsLAT;
-    const originsLNG = req.query.originsLNG;
-    const destinationsLAT = req.query.destinationsLAT;
-    const destinationsLNG = req.query.destinationsLNG;
-    
+    const userIdA = req.query.userIdA;
+    const userIdB = req.query.userIdB;
+
+    const locationA = await userService.getLocation(userIdA);
+    const locationB = await userService.getLocation(userIdB);
+    const originsLAT = locationA.lat;
+    const originsLNG = locationA.lng;
+    const destinationsLAT = locationB.lat;
+    const destinationsLNG = locationB.lng;
+
     // Tính tọa độ trung điểm
     const lat = (parseFloat(originsLAT) + parseFloat(destinationsLAT)) / 2;
     const lng = (parseFloat(originsLNG) + parseFloat(destinationsLNG)) / 2;
@@ -103,8 +123,11 @@ export async function getRecommendCafe(req, res) {
     // Gọi hàm getMiddlePoint và nhận kết quả trả về
     const middlePoint = await getMiddlePoint(req, res);
 
-    if (!middlePoint || !middlePoint.lat || !middlePoint.lng) { // Kiểm tra xem kết quả trả về có hợp lệ hay không
-      return res.status(500).json({ error: 'Invalid middle point coordinates' });
+    if (!middlePoint || !middlePoint.lat || !middlePoint.lng) {
+      // Kiểm tra xem kết quả trả về có hợp lệ hay không
+      return res
+        .status(500)
+        .json({ error: 'Invalid middle point coordinates' });
     }
 
     const { lat, lng } = middlePoint; // Sử dụng destructuring để lấy lat và lng từ kết quả trả về
@@ -115,7 +138,9 @@ export async function getRecommendCafe(req, res) {
 
     // Lặp cho đến khi nhận được kết quả hoặc đạt tới giới hạn bán kính
     while (!response && radius <= 10) {
-      response = await axios.get(`https://rsapi.goong.io/Place/AutoComplete?input=Highland&location=${lat},${lng}&limit=200&radius=${radius}&api_key=KnB6OOmQcQpYSTnqzYhjqUmcGSBKUob1cDF9oOPw`);
+      response = await axios.get(
+        `https://rsapi.goong.io/Place/AutoComplete?input=Highland&location=${lat},${lng}&limit=200&radius=${radius}&api_key=KnB6OOmQcQpYSTnqzYhjqUmcGSBKUob1cDF9oOPw`,
+      );
       // Nếu không nhận được kết quả, tăng radius lên 1 đơn vị km
       if (!response.data) {
         radius += 1;
@@ -126,7 +151,9 @@ export async function getRecommendCafe(req, res) {
     }
 
     // Nếu vòng lặp kết thúc mà không có kết quả
-    res.status(404).json({ message: 'No results found within the search radius.' });
+    res
+      .status(404)
+      .json({ message: 'No results found within the search radius.' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal server error' });

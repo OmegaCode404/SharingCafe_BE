@@ -178,7 +178,7 @@ export async function getAllUserReport(page) {
   if (page) {
     sqlQuery = `
     select 
-    u2.user_id  ,u2.user_name  , u2.profile_avatar  ,
+    u2.user_id, u2.user_name, u2.profile_avatar, u2.is_available,
     jsonb_agg(
         jsonb_build_object(
           'report_id', ur.report_id ,
@@ -202,7 +202,7 @@ export async function getAllUserReport(page) {
   } else {
     sqlQuery = `
     select 
-    u2.user_id  ,u2.user_name  , u2.profile_avatar  ,
+    u2.user_id, u2.user_name, u2.profile_avatar, u2.is_available, 
     jsonb_agg(
         jsonb_build_object(
           'report_id', ur.report_id ,
@@ -245,4 +245,81 @@ export async function deleteUserReport(reportId) {
     where: { report_id: reportId },
   });
   return deletedUserReport;
+}
+
+export async function getAllReport() {
+  const sqlQuery = `
+  select 'User' as report_type,
+	jsonb_agg(
+  	jsonb_build_object(
+  		'report_id', ur.report_id ,
+  		'reported_id', u2.user_id ,
+  		'reported_name', u2.user_name,
+  		'reported_avatar', u2.profile_avatar,
+  		'reporter_id', ur.reporter_id ,
+  		'reporter', u.user_name ,
+  		'report_status', rs.report_status,
+  		'created_at', ur.created_at,
+  		'is_available', u2.is_available 
+  	) 
+  ) as report
+    from user_report ur 
+	inner join report_status rs 
+	on rs.report_status_id = ur.report_status_id 
+	join "user" u
+	on u.user_id = ur.reporter_id 
+	join "user" u2 
+ 	on u2.user_id = ur.user_id 
+	union 
+	select 'Blog' as report_type, 
+  	        jsonb_agg(
+  		        jsonb_build_object(
+  			    'report_id', br.report_id ,
+  			    'blog_id', br.blog_id,
+  			    'blog_title', b.title,
+  			    'image', b.image,
+  			    'reporter_id', br.reporter_id ,
+  			    'reporter', u.user_name,
+  			    'report_status', rs.report_status,
+  			    'created_at', br.created_at,
+  			    'is_approve', b.is_approve
+  		        ) 
+  	        ) as report
+    from
+  	    blog_report br 
+    inner join report_status rs
+    on rs.report_status_id = br.report_status_id 
+    join "user" u 
+    on u.user_id = br.reporter_id
+    join blog b 
+    on br.blog_id = b.blog_id 
+    union
+    select 'Event' as report_type,
+		jsonb_agg(
+  			jsonb_build_object(
+  			'report_id', er.report_id ,
+  			'event_id', e.event_id,
+  			'event_title', e.title,
+  			'event_image', e.background_img,
+  			'reporter_id', er.reporter_id ,
+  			'reporter', u.user_name ,
+  			'report_status', rs.report_status,
+  			'created_at', er.created_at ,
+  			'is_approve', e.is_approve
+  			) 
+  		) as report
+	from
+		event_report er 
+	inner join report_status rs 
+	on rs.report_status_id = er.report_status_id 
+	join "user" u
+	on u.user_id = er.reporter_id 
+	join "event" e 
+	on er.event_id = e.event_id
+  `;
+  const result = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
+  return result;
 }

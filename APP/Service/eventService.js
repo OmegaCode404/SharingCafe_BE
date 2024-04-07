@@ -1,5 +1,8 @@
 import * as eventDAL from '../DAL/eventDAL.js';
+import * as commonFunction from '../common/CommonFunction.js';
+import * as firebaseHelper from '../utility/FirebaseHelper.js';
 import { v4 as uuidv4 } from 'uuid';
+import fs from 'fs';
 
 export async function getEvents(title, date, page) {
   return await eventDAL.getEvents(title, date, page);
@@ -41,6 +44,102 @@ export async function getPopularEvents() {
   return await eventDAL.getPopularEvents();
 }
 
-export async function updateImage(fileData){
+export async function updateImage(fileData) {
   return await eventDAL.updateImage(fileData);
+}
+
+export async function getEventUrl(event_id) {
+  const event = await getEvent(event_id);
+  if (!event) throw new Error('Event not found !!!');
+  return {
+    url: `https://sharing-coffee-be-capstone-com.onrender.com/api/event/${event_id}`,
+  };
+}
+
+export async function getUserEvent(title, date, page){
+  return await eventDAL.getUserEvent(title, date, page);
+}
+
+export async function sendNotificationIfEventOccurToday() {
+  const filePath = 'events.json';
+
+  let events = [];
+  let result;
+
+  try {
+    // Check if it's midnight and clear events.json if true
+    const isMidnight = commonFunction.isMidnightToFourAM();
+    if (isMidnight) {
+      console.log(`Clearing events.json`);
+      fs.writeFileSync(filePath, '[]');
+      console.log(`Events file ${filePath} cleared.`);
+    } else {
+      console.log('Not midnight yet!');
+      const eventsData = fs.readFileSync(filePath, 'utf8');
+      if (eventsData.trim()) {
+        events = JSON.parse(eventsData);
+      } else {
+        console.log('Events file is empty.');
+      }
+
+      // Fetch events from database if file is empty or events array is empty
+      if (events.length === 0) {
+        console.log('Fetching events from database');
+        // Simulating database fetch for demonstration
+        result = [
+          {
+            event_id: 1,
+            time_of_event: '2024-04-06 17:15:00.000',
+            title: 'TITLE',
+            body: 'TESTBODy',
+            user_token: [1, 2],
+          },
+          {
+            event_id: 2,
+            time_of_event: '2024-04-06 17:15:00.000',
+            title: 'TITLE',
+            body: 'TESTBODy',
+            user_token: [1, 2],
+          },
+          {
+            event_id: 3,
+            time_of_event: '2024-04-06 17:15:00.000',
+            title: 'TITLE',
+            body: 'TESTBODy',
+            user_token: [1, 2],
+          },
+        ];
+        // result = await eventDAL.getEventOccurToday();
+        if (result.length > 0) {
+          console.log(`Fetched ${result.length} events from database`);
+          fs.writeFileSync(filePath, JSON.stringify(result, null, 2));
+          events = result;
+        }
+      }
+      console.log(`Events:`, events);
+      // Process events
+      for (const event of events) {
+        console.log(`Processing event:`, event);
+        const is30minTillTheEventOccur =
+          commonFunction.is30minTillTheEventOccur(event.time_of_event);
+        console.log(`is30minTillTheEventOccur:`, is30minTillTheEventOccur);
+        if (is30minTillTheEventOccur) {
+          for (const token of event.user_token) {
+            console.log(
+              `Sending notification to token ${token} for event ${event.title} and event body ${event.body}`,
+            );
+            // await firebaseHelper.sendNotification(
+            //   token,
+            //   event.title,
+            //   event.body,
+            // );
+          }
+        }
+      }
+    }
+
+    return events;
+  } catch (error) {
+    console.error('Error:', error);
+  }
 }

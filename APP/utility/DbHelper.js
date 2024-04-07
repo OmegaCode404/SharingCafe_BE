@@ -1,34 +1,3 @@
-// // DbHelper.js
-
-// import pkg from 'pg';
-// import dotenv from 'dotenv';
-// dotenv.config();
-
-// const { Pool } = pkg;
-
-// console.log(
-//   '~~~~DB_HOST',
-//   DB_HOST,
-//   '~~~~DB_PORT',
-//   DB_PORT,
-//   '~~~~DB_DATABASE',
-//   DB_DATABASE,
-//   '~~~~DB_USER',
-//   DB_USER,
-//   '~~~~DB_PASSWORD',
-//   DB_PASSWORD,
-// );
-
-// const pool = new Pool({
-//   host: DB_HOST,
-//   port: DB_PORT,
-//   database: DB_DATABASE,
-//   user: DB_USER,
-//   password: DB_PASSWORD,
-// });
-
-// export { pool };
-
 import { Sequelize, DataTypes } from 'sequelize';
 import dotenv from 'dotenv';
 dotenv.config();
@@ -59,14 +28,7 @@ const sequelize = new Sequelize({
   database: DB_DATABASE,
   sync: false,
 });
-// sequelize
-//   .authenticate()
-//   .then(() => {
-//     console.log('Connection has been established successfully.');
-//   })
-//   .catch((err) => {
-//     console.error('Unable to connect to the database:', err);
-//   });
+
 const User = sequelize.define(
   'User',
   {
@@ -764,7 +726,8 @@ const UserInterest = sequelize.define(
 );
 
 const Schedule = sequelize.define(
-  'schedule', {
+  'schedule',
+  {
     schedule_id: {
       type: DataTypes.UUID,
       primaryKey: true,
@@ -777,7 +740,7 @@ const Schedule = sequelize.define(
       type: DataTypes.TEXT,
       allowNull: false,
     },
-    date: {
+    schedule_time: {
       type: DataTypes.DATE,
     },
     is_accept: {
@@ -795,11 +758,12 @@ const Schedule = sequelize.define(
     receiver_id: {
       type: DataTypes.UUID,
     },
-  },{
+  },
+  {
     tableName: 'schedule',
     timestamps: false,
   },
-)
+);
 
 const LikeBlog = sequelize.define(
   'like_blog',

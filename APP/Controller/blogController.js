@@ -112,7 +112,7 @@ export async function getPopularBlogs(req, res) {
 
 export async function searchByName(req, res) {
   try {
-    const title = req.body.title;
+    const title = req.query.title;
     const result = await blogService.searchByName(title);
     res.status(200).send(result);
   } catch (error) {
@@ -200,5 +200,28 @@ export async function deleteComment(req, res) {
     await t.rollback();
     console.log(error);
     res.status(404).send(error);
+  }
+}
+
+export async function getBlogUrl(req, res) {
+  try {
+    const blog_id = req.query.blog_id;
+    const result = await blogService.getBlogUrl(blog_id);
+    res.status(200).send(result);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ error: error.message });
+  }
+}
+
+export async function getUserBlog(req, res) {
+  try {
+    const page = req.query.page;
+    const title = req.query.title;
+    const result = await blogService.getUserBlog(page, title);
+    res.status(200).send(result);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ error: error.message });
   }
 }

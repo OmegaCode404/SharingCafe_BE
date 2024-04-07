@@ -108,3 +108,13 @@ export async function updateEventStatus(req, res) {
     res.status(404).send(error);
   }
 }
+
+export async function getEventStatics(req, res) {
+  try {
+    const statics = await admService.getEventStatics();
+    res.status(200).send(statics);
+  } catch (e) {
+    console.log(e);
+    res.status(400).send(e);
+  }
+}

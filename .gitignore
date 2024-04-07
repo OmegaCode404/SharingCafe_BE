@@ -2,7 +2,7 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=node
 
 ### Node ###
-/serviceAccountKey.json
+serviceAccountKey.json
 # Logs
 logs
 *.log

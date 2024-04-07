@@ -128,3 +128,13 @@ export async function deleteUserReport(req, res) {
     res.status(404).send(error);
   }
 }
+
+export async function getAllReport(req, res) {
+  try {
+    const result = await reportService.getAllReport();
+    res.status(200).send(result);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ error: error.message });
+  }
+}

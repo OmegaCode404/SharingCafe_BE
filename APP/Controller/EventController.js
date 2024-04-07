@@ -136,3 +136,27 @@ export async function updateImage(req, res) {
     res.status(404).send(error);
   }
 }
+
+export async function getEventUrl(req, res) {
+  try {
+    const event_id = req.query.event_id;
+    const result = await eventService.getEventUrl(event_id);
+    res.status(200).send(result);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ error: error.message });
+  }
+}
+
+export async function getUserEvent(req, res) {
+  try {
+    const title = req.query.title;
+    const date = req.query.date;
+    const page = req.query.page;
+    const result = await eventService.getUserEvent(title, date, page);
+    res.status(200).send(result);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ error: error.message });
+  }
+}

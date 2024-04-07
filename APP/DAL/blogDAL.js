@@ -4,9 +4,12 @@ import {
   Comment,
   LikeBlog,
 } from '../utility/DbHelper.js';
+
 export async function getBlogs(page, title) {
   let name = title;
-  if (name == null) {name = ''}
+  if (name == null) {
+    name = '';
+  }
   let sqlQuery = '';
   if (page) {
     sqlQuery = `
@@ -79,7 +82,7 @@ export async function createBlog(blogId, dataObj) {
     image: dataObj.image,
     likes_count: dataObj.likes_count,
     comments_count: dataObj.comments_count,
-    is_approve: dataObj.is_approve,
+    is_approve: true,
     is_visible: true,
     interest_id: dataObj.interest_id,
   });
@@ -165,8 +168,8 @@ export async function getNewBlogs(page) {
 }
 
 export async function getPopularBlogs(page) {
-  let sqlQuery ='';
-  if (page){
+  let sqlQuery = '';
+  if (page) {
     sqlQuery = `
     select 
       b.*, u.user_name, i.name
@@ -199,7 +202,7 @@ export async function getPopularBlogs(page) {
     order by b.likes_count desc 
   `;
   }
-  
+
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
@@ -298,7 +301,7 @@ export async function likeBlog(like_blog_id, dataObj) {
     SET likes_count = likes_count + 1
     WHERE blog_id = '${dataObj.blog_id}'
   `;
-    const result = await SequelizeInstance.query(sqlQuery, {
+  const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
   });
@@ -309,19 +312,19 @@ export async function likeBlog(like_blog_id, dataObj) {
   });
 }
 
-export async function unlikeBlog(dataObj){
+export async function unlikeBlog(dataObj) {
   const sqlQuery = `
     UPDATE blog 
     SET likes_count = likes_count - 1
     WHERE blog_id = '${dataObj.blog_id}'
   `;
-    const result = await SequelizeInstance.query(sqlQuery, {
+  const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
   });
   LikeBlog.destroy({
-    where: {like_blog_id: dataObj.like_blog_id}
-  })
+    where: { like_blog_id: dataObj.like_blog_id },
+  });
   return result;
 }
 
@@ -330,4 +333,50 @@ export async function deleteComment(commentId) {
     where: { comment_id: commentId },
   });
   return deletedComment;
+}
+
+export async function getUserBlog(page, title) {
+  let name = title;
+  if (name == null) {
+    name = '';
+  }
+  let sqlQuery = '';
+  if (page) {
+    sqlQuery = `
+    select 
+      b.*, u.user_name, i.name, u.profile_avatar
+    from 
+      blog b 
+    join 
+      interest i 
+      on 1=1 
+      and b.interest_id = i.interest_id
+    join
+      "user" u
+      on u.user_id = b.user_id
+    where b.title like '%${name}%' and b.is_approve = true and b.is_visible = true
+    offset ((${page} - 1 ) * 10) rows 
+    fetch next 10 rows only
+    `;
+  } else {
+    sqlQuery = `
+    select 
+      b.*, u.user_name, i.name, u.profile_avatar
+    from 
+      blog b 
+    join 
+      interest i 
+      on 1=1 
+      and b.interest_id = i.interest_id
+    join
+      "user" u
+    on u.user_id = b.user_id
+    where b.title like '%${name}%' and b.is_approve = true and b.is_visible = true
+  `;
+  }
+  const result = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
+  return result;
 }
