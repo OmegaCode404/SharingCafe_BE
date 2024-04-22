@@ -1,8 +1,13 @@
 import { Error } from 'sequelize';
 import * as userDAL from '../DAL/userDAL.js';
 import * as matchDAL from '../DAL/matchDAL.js';
+import * as scheduleDAL from '../DAL/scheduleDAL.js';
+
 import * as commonEnum from '../common/CommonEnums.js';
+import * as commonFunctions from '../common/CommonFunctions.js';
 import { v4 as uuidv4 } from 'uuid';
+import * as firebaseHelper from '../utility/FirebaseHelper.js';
+import * as notificationDAL from '../DAL/notificationDAL.js';
 import axios from 'axios';
 
 export async function getUserDetails(email, password) {
@@ -27,8 +32,8 @@ export async function register(user) {
   let phone = user.phone;
   if (phone != null) {
     phone = await getUserByPhone(user.phone);
-  } else if (phone || email) {
-    throw new Error('Email already in use 😕');
+  } else if (phone != null || email != null) {
+    throw new Error('Email/Phone already in use 😕');
   }
   return await userDAL.register(userId, user);
 }
@@ -246,11 +251,23 @@ export async function getUserMatchWithPendingStatus(userId) {
   return result;
 }
 export async function getUserMatchByInterestPaging(userId, limit, offset) {
-  const result = await userDAL.getUserMatchByInterestPaging(
+  const [user] = await userDAL.getUserInfoById(userId);
+  let result = await userDAL.getUserMatchByInterestPaging(
     userId,
     limit,
     offset,
   );
+  result = result.map((e) => {
+    return {
+      ...e,
+      distance: commonFunctions.calculateDistance(
+        e.lat,
+        e.lng,
+        user.lat,
+        user.lng,
+      ),
+    };
+  });
   const list = await userDAL.getUserMatchByInterest(userId);
   return { total: list.length, limit, offset, data: result };
 }
@@ -271,6 +288,8 @@ export async function getSuggestEvent(userId) {
   return await userDAL.getSuggestEvent(userId);
 }
 export async function updateUserMatchStatus(userId, dataObj) {
+  const [userCurrent] = await userDAL.getUserInfoById(userId);
+  const [userLiked] = await userDAL.getUserInfoById(dataObj.user_id);
   const status = await matchDAL.getMatchStatus();
   const [match] = await matchDAL.getMatchCouple(userId, dataObj.user_id);
   console.log(match);
@@ -288,6 +307,7 @@ export async function updateUserMatchStatus(userId, dataObj) {
       : status.filter(
           (e) => e.user_match_status === commonEnum.MATCH_STATUS.DISLIKE,
         )[0];
+  console.log(statusStage);
   await matchDAL.upsertMatch(
     user_match_id,
     userId,
@@ -295,6 +315,25 @@ export async function updateUserMatchStatus(userId, dataObj) {
     statusStage.user_match_status_id,
     upsertOnly,
   );
+  const title = `MATCHING FEATURE`;
+  const bodyCurrent = `MATCHING STATUS : ${statusStage.user_match_status} with ${userLiked.user_name}`;
+  const bodyLike = `MATCHING STATUS : ${statusStage.user_match_status} by ${userCurrent.user_name}`;
+  const [newNotificationStatus] =
+    await notificationDAL.getNotificationNewStatus();
+
+  await notificationDAL.createNotification(
+    userId,
+    bodyCurrent,
+    newNotificationStatus.notification_status_id,
+  );
+  await notificationDAL.createNotification(
+    dataObj.user_id,
+    bodyLike,
+    newNotificationStatus.notification_status_id,
+  );
+  firebaseHelper.sendNotification(userLiked.token_id, title, bodyLike);
+  firebaseHelper.sendNotification(userCurrent.token_id, title, bodyCurrent);
+
   return await matchDAL.getMatchCouple(userId, dataObj.user_id);
 }
 
@@ -431,4 +470,45 @@ export async function getProfile(userId, currentUserId) {
   });
 
   return userProfile;
+}
+
+export async function getMiniUser(userId) {
+  var rawResult = await userDAL.getUserToken(userId);
+  return rawResult;
+}
+
+export async function getProvince() {
+  return await userDAL.getProvince();
+}
+
+export async function getUserBlockedByUser(userId) {
+  return await userDAL.getUserBlockedByUser(userId);
+}
+export async function blockingAUser(userId, blockedId) {
+  const [userCurrent] = await userDAL.getUserInfoById(userId);
+  const [userLiked] = await userDAL.getUserInfoById(blockedId);
+  const status = await matchDAL.getMatchStatus();
+  const [match] = await matchDAL.getMatchCouple(userId, blockedId);
+  console.log(match);
+  const upsertOnly = !match;
+  const user_match_id = match ? match.user_match_id : uuidv4();
+  const statusStage =
+    !match &&
+    status.filter(
+      (e) => e.user_match_status === commonEnum.MATCH_STATUS.DISLIKE,
+    )[0];
+  console.log(statusStage);
+  await matchDAL.upsertMatch(
+    user_match_id,
+    userId,
+    blockedId,
+    statusStage.user_match_status_id,
+    upsertOnly,
+  );
+  await scheduleDAL.canceledSchedule(userId, blockedId);
+  return await userDAL.blockingAUser(userId, blockedId);
+}
+
+export async function unBlockingAUser(userId, blockedId) {
+  return await userDAL.unBlockingAUser(userId, blockedId);
 }

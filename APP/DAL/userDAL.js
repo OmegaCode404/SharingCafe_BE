@@ -53,7 +53,7 @@ export async function register(userId, user) {
     password: user.password,
     phone: user.phone,
     email: user.email,
-    Bio: user.Bio,
+    story: user.story,
     gender: user.gender,
     age: user.age,
     is_available: true,
@@ -97,10 +97,27 @@ export async function getUserByEmail(email) {
   });
 }
 
-export async function getUser(userId) {
+export async function getUserToken(userId) {
   const sqlQuery = `
   select 
-    u.user_id, u."Bio", u.user_name, u.profile_avatar, u.email, u.phone
+    u.user_id, u.token_id
+  from 
+    "user" u
+   where u.user_id = '${userId}'
+  `;
+  const result = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
+  return result;
+}
+export async function getUserInfoById(userId) {
+  const sqlQuery = `
+  select 
+   u.lat,
+   u.lng,
+   u.token_id,
+   u.user_name
   from 
     "user" u
    where u.user_id = '${userId}'
@@ -252,14 +269,159 @@ export async function getUserDetailsById(userId) {
 }
 export async function getUserMatchByInterest(userId) {
   const sqlQuery = `
-   SELECT u.*
-FROM "user" u
-LEFT JOIN user_match m1 ON u.user_id = m1.user_id_liked AND m1.current_user_id = '${userId}'
-LEFT JOIN user_match m2 ON u.user_id = m2.current_user_id AND m2.user_id_liked = '${userId}'
-LEFT JOIN user_interest i ON u.user_id = i.user_id AND i.interest_id IN (SELECT interest_id FROM user_interest WHERE user_id = '${userId}')
-WHERE m1.user_id_liked IS NULL
-  AND m2.current_user_id IS NULL
-  AND i.user_id IS NULL;
+   WITH interests AS (
+    SELECT 
+        DISTINCT u.user_id,
+        u.user_name,
+        u.phone,
+        u.email,
+        u.profile_avatar,
+        u.story,
+        u.registration,
+        u.gender,
+        u.age,
+        u.purpose,
+        u.favorite_location,
+        u.lat,
+        u.lng,
+        u.address,
+        u.token_id 
+    FROM 
+        public."user" u
+    INNER JOIN 
+        user_interest ui ON ui.user_id = u.user_id
+    INNER JOIN 
+        interest i ON i.interest_id = ui.interest_id OR ui.interest_id = i.parent_interest_id
+    WHERE 
+        ui.interest_id IN (
+            SELECT ui2.interest_id 
+            FROM user_interest ui2 
+            WHERE ui2.user_id = '${userId}'
+        )
+),
+match_liked AS (
+    SELECT 
+        DISTINCT u.user_id,
+        u.user_name,
+        u.phone,
+        u.email,
+        u.profile_avatar,
+        u.story,
+        u.registration,
+        u.gender,
+        u.age,
+        u.purpose,
+        u.favorite_location,
+        u.lat,
+        u.lng,
+        u.address,
+        u.token_id
+    FROM 
+        public."user" u
+    WHERE 
+        u.user_id IN (
+            SELECT current_user_id 
+            FROM user_match um 
+            WHERE user_id_liked = '${userId}'
+        )
+        AND u.user_id <> '${userId}'
+),
+sub_total as(
+SELECT 
+        u.user_id,
+        u.user_name,
+        u.phone,
+        u.email,
+        u.profile_avatar,
+        u.story,
+        u.registration,
+        u.gender,
+        u.age,
+        u.purpose,
+        u.favorite_location,
+        u.lat,
+        u.lng,
+        u.address,
+        u.token_id
+    FROM 
+        interests u
+    WHERE 
+        u.user_id <> '${userId}'
+)
+, base AS (
+    select * from sub_total
+    UNION 
+    SELECT 
+        u.user_id,
+        u.user_name,
+        u.phone,
+        u.email,
+        u.profile_avatar,
+        u.story,
+        u.registration,
+        u.gender,
+        u.age,
+        u.purpose,
+        u.favorite_location,
+        u.lat,
+        u.lng,
+        u.address,
+        u.token_id
+    FROM 
+        public."user" u
+    WHERE 
+        u.user_id <> '${userId}'
+)
+,total as(
+ select 
+    user_id,
+    user_name,
+    phone,
+    email,
+    profile_avatar,
+    story,
+    registration,
+    gender,
+    age,
+    purpose,
+    favorite_location,
+    lat,
+    lng,
+    address,
+    token_id
+FROM 
+    base u
+WHERE
+u.user_id NOT IN (
+    SELECT user_id_liked 
+    FROM user_match um 
+    WHERE current_user_id = '${userId}'
+)
+)
+SELECT 
+    u.user_id,
+    u.user_name,
+    u.phone,
+    u.email,
+    u.profile_avatar,
+    u.story,
+    u.registration,
+    u.gender,
+    u.age,
+    u.purpose,
+    u.favorite_location,
+    u.lat,
+    u.lng,
+    u.address,
+    u.token_id
+FROM 
+    match_liked u
+WHERE 
+    u.user_id <> '${userId}'
+    UNION 
+ select 
+ *
+FROM total t
   `;
 
   const userDetails = await SequelizeInstance.query(sqlQuery, {
@@ -272,17 +434,18 @@ WHERE m1.user_id_liked IS NULL
 
 export async function getUserMatchWithStatus(userId, status) {
   let sqlQuery = `
-    SELECT 
-      *
-    FROM 
-      public.user u
-    INNER JOIN 
-      user_match um
-      ON um.user_id_liked = u.user_id 
-    INNER JOIN 
-      user_match_status ums 
-      ON um.user_match_status_id = ums.user_match_status_id 
-    WHERE um.current_user_id = '${userId}'
+SELECT 
+    *
+FROM 
+    public.user u
+INNER JOIN 
+    user_match um ON um.user_id_liked = u.user_id OR um.current_user_id = u.user_id 
+INNER JOIN 
+    user_match_status ums ON um.user_match_status_id = ums.user_match_status_id 
+WHERE 
+    (um.current_user_id = '${userId}' OR um.user_id_liked = '${userId}')
+    AND ums.user_match_status_id IS NOT null
+    and u.user_id <> '${userId}'
   `;
 
   if (status) {
@@ -322,53 +485,312 @@ export async function getUserMatchWithPendingStatus(userId) {
 
 export async function getUserMatchByInterestPaging(userId, limit, offset) {
   const sqlQuery = `
-SELECT
-    u.*
-FROM
-    "user" u
-LEFT JOIN (
-    SELECT
-        user_match_id,
-        current_user_id,
-        user_id_liked,
-        ums.*
-    FROM
-        public.user_match um
-    INNER JOIN user_match_status ums ON ums.user_match_status_id = um.user_match_status_id
-) m1 ON u.user_id = m1.user_id_liked AND m1.current_user_id = '${userId}'
-LEFT JOIN (
-    SELECT
-        user_match_id,
-        current_user_id,
-        user_id_liked,
-        ums.*
-    FROM
-        public.user_match um
-    INNER JOIN user_match_status ums ON ums.user_match_status_id = um.user_match_status_id
-) m2 ON u.user_id = m2.current_user_id AND m2.user_id_liked = '${userId}'
-LEFT JOIN user_interest i ON u.user_id = i.user_id
-    AND i.interest_id IN (
-        SELECT
-            interest_id
-        FROM
-            user_interest
-        WHERE
-            user_id = '${userId}'
-    )
+WITH interests AS (
+    SELECT 
+        DISTINCT u.user_id,
+        u.user_name,
+        u.phone,
+        u.email,
+        u.profile_avatar,
+        u.story,
+        u.registration,
+        u.gender,
+        u.age,
+        u.purpose,
+        u.favorite_location,
+        u.lat,
+        u.lng,
+        u.address,
+        u.token_id 
+    FROM 
+        public."user" u
+    INNER JOIN 
+        user_interest ui ON ui.user_id = u.user_id
+    INNER JOIN 
+        interest i ON i.interest_id = ui.interest_id OR ui.interest_id = i.parent_interest_id
+    WHERE 
+        ui.interest_id IN (
+            SELECT ui2.interest_id 
+            FROM user_interest ui2 
+            WHERE ui2.user_id = '${userId}'
+        )
+),
+match_liked AS (
+    SELECT 
+        DISTINCT u.user_id,
+        u.user_name,
+        u.phone,
+        u.email,
+        u.profile_avatar,
+        u.story,
+        u.registration,
+        u.gender,
+        u.age,
+        u.purpose,
+        u.favorite_location,
+        u.lat,
+        u.lng,
+        u.address,
+        u.token_id
+    FROM 
+        public."user" u
+    WHERE 
+        u.user_id IN (
+            SELECT current_user_id 
+            FROM user_match um 
+            WHERE user_id_liked = '${userId}'
+        )
+        AND u.user_id <> '${userId}'
+),
+sub_total as(
+SELECT 
+        u.user_id,
+        u.user_name,
+        u.phone,
+        u.email,
+        u.profile_avatar,
+        u.story,
+        u.registration,
+        u.gender,
+        u.age,
+        u.purpose,
+        u.favorite_location,
+        u.lat,
+        u.lng,
+        u.address,
+        u.token_id
+    FROM 
+        interests u
+    WHERE 
+        u.user_id <> '${userId}'
+)
+, base AS (
+    select * from sub_total
+    UNION 
+    SELECT 
+        u.user_id,
+        u.user_name,
+        u.phone,
+        u.email,
+        u.profile_avatar,
+        u.story,
+        u.registration,
+        u.gender,
+        u.age,
+        u.purpose,
+        u.favorite_location,
+        u.lat,
+        u.lng,
+        u.address,
+        u.token_id
+    FROM 
+        public."user" u
+    WHERE 
+        u.user_id <> '${userId}'
+)
+,total as(
+ select 
+    user_id,
+    user_name,
+    phone,
+    email,
+    profile_avatar,
+    story,
+    registration,
+    gender,
+    age,
+    purpose,
+    favorite_location,
+    lat,
+    lng,
+    address,
+    token_id
+FROM 
+    base u
 WHERE
-    (
-        m1.user_id_liked IS NULL
-        OR m1.user_match_status IS NULL
-        OR m1.user_match_status = 'Pending'
-    )
-    AND (
-        m2.current_user_id IS NULL
-        OR m2.user_match_status IS NULL
-        OR m2.user_match_status = 'Pending'
-    )
-    AND i.user_id IS NULL
+u.user_id NOT IN (
+    SELECT user_id_liked 
+    FROM user_match um 
+    WHERE current_user_id = '${userId}'
+  )
+), user_in_age_and_address as(
+  select 
+    u.user_id,
+    u.user_name,
+    u.phone,
+    u.email,
+    u.profile_avatar,
+    u.story,
+    u.registration,
+    u.gender,
+    u.age,
+    u.purpose,
+    u.favorite_location,
+    u.lat,
+    u.lng,
+    u.address,
+    u.token_id
+  from 
+    public.user u
+  where 1 = 1
+  and u.user_id <> '${userId}'
+  and u.age in (select age from "user" u2 where u2.user_id = '${userId}')
+  and u.address in (select address from "user" u2 where u2.user_id = '${userId}')
+)
+select * from user_in_age_and_address
+union
+SELECT 
+    u.user_id,
+    u.user_name,
+    u.phone,
+    u.email,
+    u.profile_avatar,
+    u.story,
+    u.registration,
+    u.gender,
+    u.age,
+    u.purpose,
+    u.favorite_location,
+    u.lat,
+    u.lng,
+    u.address,
+    u.token_id
+FROM 
+    match_liked u
+WHERE 
+    u.user_id <> '${userId}'
+    and u.user_id not in (select blocker_id from user_block ub where blocked_id = '${userId}')
+    and u.user_id not in (select blocked_id from user_block ub where blocker_id = '${userId}')
+    UNION 
+ select 
+ *
+FROM total t
+  WHERE 
+    1=1
+    and t.user_id not in(select blocker_id from user_block ub where blocked_id = '${userId}')
+    and t.user_id not in (select blocked_id from user_block ub where blocker_id = '${userId}')
 limit ${limit} 
 offset ${offset}`;
+
+  const sqlQueryNEWSOLUTION = `select 
+	u.user_id ,
+	u.user_name ,
+	u.phone ,
+	u.email ,
+	u.profile_avatar ,
+	u.story ,
+	u.registration ,
+	u.role_id ,
+	u.is_available ,
+	u.gender ,
+	u.is_available ,
+	u.gender ,
+	u.age ,
+	u.purpose ,
+	u.favorite_location ,
+	u.lat ,
+	u.lng ,
+	u.address,
+	1 as priority
+from
+	"user" u
+left join user_interest ui on
+	u.user_id = ui.user_id
+where
+	ui.interest_id in (
+	select
+		uii.interest_id
+	from
+		user_interest uii
+	where
+		uii.user_id = '${userId}'
+union
+	select
+		iii.parent_interest_id
+	from
+		user_interest uii
+	join interest iii on
+		uii.interest_id = iii.interest_id
+	where
+		uii.user_id = '${userId}')
+	and u.user_id not in (
+	select
+		user_id
+	from
+		(
+		select
+			*
+		from
+			public.user u
+		inner join 
+    user_match um on
+			um.user_id_liked = u.user_id
+			or um.current_user_id = u.user_id
+		inner join 
+    user_match_status ums on
+			um.user_match_status_id = ums.user_match_status_id
+		where
+			(um.current_user_id = '${userId}'
+				or um.user_id_liked = '${userId}')
+			and ums.user_match_status_id is not null
+			and u.user_id <> '${userId}'
+			and (ums.user_match_status = 'Matched'
+				or ums.user_match_status = 'Dislike')) as excludeUser)
+	and u.user_id != '${userId}'
+union
+select
+	us.user_id ,
+	us.user_name ,
+	us.phone ,
+	us.email ,
+	us.profile_avatar ,
+	us.story ,
+	us.registration ,
+	us.role_id ,
+	us.is_available ,
+	us.gender ,
+	us.is_available ,
+	us.gender ,
+	us.age ,
+	us.purpose ,
+	us.favorite_location ,
+	us.lat ,
+	us.lng ,
+	us.address,
+	0 as priority
+from
+	"user" us
+where
+	us.user_id not in (
+	select
+		user_id
+	from
+		(
+		select
+			*
+		from
+			public.user u
+		inner join 
+    user_match um on
+			um.user_id_liked = us.user_id
+			or um.current_user_id = u.user_id
+		inner join 
+    user_match_status ums on
+			um.user_match_status_id = ums.user_match_status_id
+		where
+			(um.current_user_id = '${userId}'
+				or um.user_id_liked = '${userId}')
+			and ums.user_match_status_id is not null
+			and u.user_id <> '${userId}'
+			and (ums.user_match_status = 'Matched'
+				or ums.user_match_status = 'Dislike')) as excludeUser)
+	and us.user_id != '${userId}'
+group by
+	user_id
+order by
+	priority desc
+limit ${limit}
+offset ${offset};`;
 
   const userDetails = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
@@ -557,7 +979,7 @@ export async function upsertUnlikeTopics(data) {
 export async function deletePersonalProblems(userId) {
   const sqlQuery = `
   DELETE FROM public.personal_problem
-  WHERE user_id = ${userId}
+  WHERE user_id = '${userId}'
   `;
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.DELETE,
@@ -686,6 +1108,76 @@ export async function getProfile(userId) {
     `;
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
+  return result;
+}
+
+export async function getProvince() {
+  const sqlQuery = `
+  select * from province
+  `;
+  const result = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
+  return result;
+}
+export async function getUserBlockedByUser(userId) {
+  const sqlQuery = `
+  select 
+  u.user_id,
+  u.user_name,
+  u.email,
+  u.profile_avatar
+from "user" u 
+inner join user_block ub 
+on blocked_id = u.user_id 
+and ub.blocker_id = :userId
+  `;
+  const result = await SequelizeInstance.query(sqlQuery, {
+    replacements: { userId },
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
+  return result;
+}
+
+export async function blockingAUser(userId, blockedId) {
+  const sqlQuery = `
+  INSERT INTO public.user_block (blocker_id, blocked_id, created_at)
+VALUES (:userId, :blockedId, now())
+ON CONFLICT (blocker_id, blocked_id) DO NOTHING;
+  `;
+  const result = await SequelizeInstance.query(sqlQuery, {
+    replacements: { userId, blockedId },
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
+  return result;
+}
+export async function unBlockingAUser(userId, blockedId) {
+  const sqlQuery = `
+    DELETE FROM public.user_block 
+    WHERE blocker_id = :userId AND blocked_id = :blockedId
+  `;
+  const result = await SequelizeInstance.query(sqlQuery, {
+    replacements: { userId, blockedId },
+    type: SequelizeInstance.QueryTypes.DELETE, // Changed QueryTypes.SELECT to QueryTypes.DELETE
+    raw: true,
+  });
+  return result;
+}
+export async function getBlockCouple(messageData) {
+  const { from, to } = messageData;
+  const sqlQuery = `
+      SELECT *
+      FROM public.user_block
+      WHERE (blocker_id = '${from}' AND blocked_id = '${to}')
+          OR (blocker_id = '${to}' AND blocked_id = '${from}')
+    `;
+  const result = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.INSERT,
     raw: true,
   });
   return result;

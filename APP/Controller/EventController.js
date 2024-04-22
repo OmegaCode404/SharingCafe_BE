@@ -160,3 +160,44 @@ export async function getUserEvent(req, res) {
     res.status(500).send({ error: error.message });
   }
 }
+
+export async function joinEvent(req, res) {
+  const t = await SequelizeInstance.transaction();
+  try {
+    const event_id = req.query.event_id;
+    const userId = req.loginUser.user_id;
+    const result = await eventService.joinEvent(event_id, userId);
+    res.status(200).send(result);
+    t.commit();
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ error: error.message });
+    t.rollback();
+  }
+}
+
+export async function leaveEvent(req, res) {
+  const t = await SequelizeInstance.transaction();
+  try {
+    const event_id = req.query.event_id;
+    const userId = req.loginUser.user_id;
+    const result = await eventService.leaveEvent(event_id, userId);
+    res.status(200).send(result);
+    t.commit();
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ error: error.message });
+    t.rollback();
+  }
+}
+
+export async function getEventParticipants(req, res) {
+  try {
+    const event_id = req.query.event_id;
+    const result = await eventService.getEventParticipants(event_id);
+    res.status(200).send(result);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ error: error.message });
+  }
+}

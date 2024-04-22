@@ -94,17 +94,18 @@ export async function updateImage(interestId, fileData) {
 export async function countBlogByInterest() {
   const sqlQuery = `
   WITH RECURSIVE interest_hierarchy AS (
-  SELECT interest_id, parent_interest_id
-  FROM interest
-  UNION ALL
-  SELECT i.interest_id, i.parent_interest_id
-  FROM interest i
-  INNER JOIN interest_hierarchy ih ON i.interest_id = ih.parent_interest_id
-)
-SELECT ih.interest_id, ih.parent_interest_id,COUNT(b.blog_id) AS blog_count
-FROM blog b
-INNER JOIN interest_hierarchy ih ON b.interest_id = ih.interest_id
-GROUP BY ih.interest_id, ih.parent_interest_id;`;
+    SELECT interest_id, name ,parent_interest_id
+    FROM interest
+    UNION ALL
+    SELECT i.interest_id, i.name,i.parent_interest_id
+    FROM interest i
+    INNER JOIN interest_hierarchy ih ON i.interest_id = ih.parent_interest_id
+  )
+  SELECT ih.interest_id, ih.name, ih.parent_interest_id,COUNT(b.blog_id) AS blog_count
+  FROM blog b
+  INNER JOIN interest_hierarchy ih ON b.interest_id = ih.interest_id
+  GROUP BY ih.interest_id, ih.name,ih.parent_interest_id;
+`;
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,

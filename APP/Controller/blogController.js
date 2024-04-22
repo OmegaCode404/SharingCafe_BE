@@ -192,8 +192,9 @@ export async function unLikeBlog(req, res) {
 export async function deleteComment(req, res) {
   const t = await SequelizeInstance.transaction();
   try {
-    const commentId = req.params.blogId;
-    const comment = await blogService.deleteComment(commentId);
+    const commentId = req.params.commentId;
+    const blogId = req.query.blog_id
+    const comment = await blogService.deleteComment(commentId, blogId);
     res.status(200).send({ comment });
     await t.commit();
   } catch (error) {
@@ -219,6 +220,17 @@ export async function getUserBlog(req, res) {
     const page = req.query.page;
     const title = req.query.title;
     const result = await blogService.getUserBlog(page, title);
+    res.status(200).send(result);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ error: error.message });
+  }
+}
+
+export async function getMyBlogs(req, res) {
+  try {
+    const userId = req.loginUser.user_id;
+    const result = await blogService.getMyBlogs(userId);
     res.status(200).send(result);
   } catch (error) {
     console.log(error);

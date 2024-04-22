@@ -55,19 +55,6 @@ export async function updateCurrentLocation(req, res) {
 
 export async function getDistance(req, res) {
   // sửa thành db
-  try {
-    const originsLAT = req.query.originsLAT;
-    const originsLNG = req.query.originsLNG;
-    const destinationsLAT = req.query.destinationsLAT;
-    const destinationsLNG = req.query.destinationsLNG;
-    var response = await userService.getDistance(originsLAT, originsLNG, destinationsLAT, destinationsLNG);
-    res.status(200).json(response.data);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-}
-
 // Hàm tính tọa độ điểm ở giữa của một khoảng cách trên mặt cầu
 function tinhDiemGiuaCuaKhoangCach(lat1, lon1, lat2, lon2) {
   const toRadians = (degrees) => degrees * (Math.PI / 180);
@@ -94,8 +81,8 @@ function tinhDiemGiuaCuaKhoangCach(lat1, lon1, lat2, lon2) {
   const lngMiddle = (lon1 + lon2) / 2;
 
   return { lat: latMiddle, lng: lngMiddle };
+  }
 }
-
 export async function getMiddlePoint(req, res) {
   try {
     const userIdA = req.query.userIdA;
@@ -135,11 +122,12 @@ export async function getRecommendCafe(req, res) {
     const name = req.query.name;
     let radius = 5; // Khởi tạo bán kính mặc định là 5 km
     let response;
+    const keyword = req.query.keyword ?? "Highland";
 
     // Lặp cho đến khi nhận được kết quả hoặc đạt tới giới hạn bán kính
     while (!response && radius <= 10) {
       response = await axios.get(
-        `https://rsapi.goong.io/Place/AutoComplete?input=Highland&location=${lat},${lng}&limit=200&radius=${radius}&api_key=KnB6OOmQcQpYSTnqzYhjqUmcGSBKUob1cDF9oOPw`,
+        `https://rsapi.goong.io/Place/AutoComplete?input=${keyword}&location=${lat},${lng}&limit=200&radius=${radius}&api_key=KnB6OOmQcQpYSTnqzYhjqUmcGSBKUob1cDF9oOPw`,
       );
       // Nếu không nhận được kết quả, tăng radius lên 1 đơn vị km
       if (!response.data) {
@@ -166,6 +154,31 @@ export async function updateLocation(req, res) {
     const lng = req.query.lng;
     const userId = req.query.userId;
     const result = await userService.updateLocation(userId, lat, lng);
+    res.status(200).send(result);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ error: error.message });
+  }
+}
+
+export async function getDistrict(req, res) {
+  try {
+    const provinceId = req.query.province_id;
+    const result = await axios.get(
+    `
+      https://esgoo.net/api-tinhthanh/2/${provinceId}.htm
+    `
+    );
+    return res.status(200).send(result.data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+export async function getProvince(req, res) {
+  try {
+    const result = await userService.getProvince();
     res.status(200).send(result);
   } catch (error) {
     console.log(error);

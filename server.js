@@ -12,6 +12,8 @@ import * as userService from './APP/Service/userService.js';
 import * as chatController from './APP/Controller/chatController.js';
 import admin from 'firebase-admin';
 import serviceAccount from './serviceAccountKey.json' with { "type": "json" };
+import * as eventService from './APP/Service/eventService.js'
+import fs from 'fs';
 const app = express();
 dotenv.config();
 
@@ -109,9 +111,23 @@ io.on('connection', (socket) => {
   socket.on('message', async (data) => {
     console.log('Received data:', data);
     const messageId = await chatController.saveMessage(data);
-    const message = await chatController.getMessage(messageId);
-    io.emit('message', message);
+    if(!messageId) {
+      const message = await chatController.getMessage(messageId);
+      io.emit('message', message);
+    }else{
+      io.emit('message', "USER GOT BLOCKED");
+    }
   });
+});
+// Schedule the task to run every 5 minutes
+import cron from 'node-cron';
+
+cron.schedule('*/30 * * * * *', async () => {
+  try {
+    await eventService.sendNotificationIfEventOccurToday(); 
+  } catch (error) {
+    console.error('Error:', error);
+  }
 });
 
 // Initialize Firebase

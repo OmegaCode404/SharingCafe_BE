@@ -118,3 +118,23 @@ export async function getEventStatics(req, res) {
     res.status(400).send(e);
   }
 }
+
+export async function getScheduleList(req, res) {
+  try {
+    const statics = await admService.getScheduleList();
+    res.status(200).send(statics);
+  } catch (e) {
+    console.log(e);
+    res.status(400).send(e);
+  }
+}
+
+export async function getBlogStatics(req, res) {
+  try {
+    const statics = await admService.getBlogStatics();
+    res.status(200).send(statics);
+  } catch (e) {
+    console.log(e);
+    res.status(400).send(e);
+  }
+}

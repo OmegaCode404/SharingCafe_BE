@@ -25,6 +25,12 @@ export async function getBlogs(page, title) {
       "user" u
       on u.user_id = b.user_id
     where b.title like '%${name}%'
+    AND NOT EXISTS (
+      SELECT 1
+      FROM public.user_block
+      WHERE (blocker_id = u.user_id AND blocked_id = b.user_id)
+          OR (blocker_id = b.user_id AND blocked_id = u.user_id)
+    )
     offset ((${page} - 1 ) * 10) rows 
     fetch next 10 rows only
     `;
@@ -42,6 +48,12 @@ export async function getBlogs(page, title) {
       "user" u
     on u.user_id = b.user_id
     where b.title like '%${name}%'
+    AND NOT EXISTS (
+      SELECT 1
+      FROM public.user_block
+      WHERE (blocker_id = u.user_id AND blocked_id = b.user_id)
+          OR (blocker_id = b.user_id AND blocked_id = u.user_id)
+    )
   `;
   }
   const result = await SequelizeInstance.query(sqlQuery, {
@@ -65,6 +77,12 @@ export async function getBlog(blogId) {
     "user" u
     on u.user_id = b.user_id
    where b.blog_id = '${blogId}'
+   AND NOT EXISTS (
+    SELECT 1
+    FROM public.user_block
+    WHERE (blocker_id = u.user_id AND blocked_id = b.user_id)
+        OR (blocker_id = b.user_id AND blocked_id = u.user_id)
+  )
   `;
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
@@ -80,8 +98,8 @@ export async function createBlog(blogId, dataObj) {
     title: dataObj.title,
     contetn: dataObj.content,
     image: dataObj.image,
-    likes_count: dataObj.likes_count,
-    comments_count: dataObj.comments_count,
+    likes_count: 0,
+    comments_count: 0,
     is_approve: true,
     is_visible: true,
     interest_id: dataObj.interest_id,
@@ -139,6 +157,13 @@ export async function getNewBlogs(page) {
     join
       "user" u
       on u.user_id = b.user_id
+    where b.is_approve = true and b.is_visible = true
+    AND NOT EXISTS (
+    SELECT 1
+    FROM public.user_block
+    WHERE (blocker_id = u.user_id AND blocked_id = b.user_id)
+        OR (blocker_id = b.user_id AND blocked_id = u.user_id)
+  )
     order by b.created_at desc 
     offset ((${page} - 1 ) * 10) rows 
     fetch next 10 rows only
@@ -146,7 +171,7 @@ export async function getNewBlogs(page) {
   } else {
     sqlQuery = `
     select 
-      b.*, u.user_name, i.name
+      b.*, u.user_name, i.name, u.profile_avatar
     from 
       blog b 
     join 
@@ -156,6 +181,13 @@ export async function getNewBlogs(page) {
     join
       "user" u
       on u.user_id = b.user_id
+    where b.is_approve = true and b.is_visible = true
+    AND NOT EXISTS (
+      SELECT 1
+      FROM public.user_block
+      WHERE (blocker_id = u.user_id AND blocked_id = b.user_id)
+          OR (blocker_id = b.user_id AND blocked_id = u.user_id)
+    )
     order by b.created_at desc 
   `;
   }
@@ -172,7 +204,7 @@ export async function getPopularBlogs(page) {
   if (page) {
     sqlQuery = `
     select 
-      b.*, u.user_name, i.name
+      b.*, u.user_name, i.name, u.profile_avatar
     from 
       blog b 
     join 
@@ -182,6 +214,13 @@ export async function getPopularBlogs(page) {
     join
       "user" u
       on u.user_id = b.user_id
+    where b.is_approve = true and b.is_visible = true
+    AND NOT EXISTS (
+      SELECT 1
+      FROM public.user_block
+      WHERE (blocker_id = u.user_id AND blocked_id = b.user_id)
+          OR (blocker_id = b.user_id AND blocked_id = u.user_id)
+    )
     order by b.likes_count desc
     offset ((${page} - 1 ) * 10) rows 
     fetch next 10 rows only
@@ -189,7 +228,7 @@ export async function getPopularBlogs(page) {
   } else {
     sqlQuery = `
     select 
-      b.*, u.user_name, i.name
+      b.*, u.user_name, i.name, u.profile_avatar
     from 
       blog b 
     join 
@@ -199,6 +238,13 @@ export async function getPopularBlogs(page) {
     join
       "user" u
     on u.user_id = b.user_id
+    where b.is_approve = true and b.is_visible = true
+    AND NOT EXISTS (
+      SELECT 1
+      FROM public.user_block
+      WHERE (blocker_id = u.user_id AND blocked_id = b.user_id)
+          OR (blocker_id = b.user_id AND blocked_id = u.user_id)
+    )
     order by b.likes_count desc 
   `;
   }
@@ -224,6 +270,12 @@ export async function searchByName(title) {
     "user" u
     on u.user_id = b.user_id
   where b.title like '%${title}%'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM public.user_block
+      WHERE (blocker_id = u.user_id AND blocked_id = b.user_id)
+          OR (blocker_id = b.user_id AND blocked_id = u.user_id)
+    )
   `;
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
@@ -235,7 +287,7 @@ export async function searchByName(title) {
 export async function getComments(blogId) {
   const sqlQuery = `
   select 
-    c.comment_id , c."content", u.user_id ,u.user_name , u.profile_avatar
+    c.comment_id , c."content", c.parent_comment_id, u.user_id ,u.user_name , u.profile_avatar
   from 
  	"comment" c
   join
@@ -245,6 +297,12 @@ export async function getComments(blogId) {
  	  blog b 
  	  on b.blog_id = c.blog_id 
   where c.blog_id = '${blogId}'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM public.user_block
+      WHERE (blocker_id = u.user_id AND blocked_id = b.user_id)
+          OR (blocker_id = b.user_id AND blocked_id = u.user_id)
+    )
   `;
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
@@ -254,6 +312,15 @@ export async function getComments(blogId) {
 }
 
 export async function createComment(comment_id, dataObj) {
+  const sqlQuery = `
+  UPDATE blog 
+  SET comments_count = comments_count + 1
+  WHERE blog_id = '${dataObj.blogId}'
+`;
+  const result = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
   return await Comment.create({
     comment_id: comment_id,
     blog_id: dataObj.blogId,
@@ -276,6 +343,12 @@ export async function getComment(commentId) {
  	  "user" u 
  	  on c.user_id = u.user_id 
   where c.comment_id = '${commentId}'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM public.user_block
+      WHERE (blocker_id = u.user_id AND blocked_id = b.user_id)
+          OR (blocker_id = b.user_id AND blocked_id = u.user_id)
+    )
   `;
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
@@ -328,9 +401,18 @@ export async function unlikeBlog(dataObj) {
   return result;
 }
 
-export async function deleteComment(commentId) {
+export async function deleteComment(commentId, blogId) {
   const deletedComment = await Comment.destroy({
     where: { comment_id: commentId },
+  });
+  const sqlQuery = `
+    UPDATE blog 
+    SET comments_count = comments_count - 1
+    WHERE blog_id = '${blogId}'
+    `;
+  const result = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
   });
   return deletedComment;
 }
@@ -355,6 +437,12 @@ export async function getUserBlog(page, title) {
       "user" u
       on u.user_id = b.user_id
     where b.title like '%${name}%' and b.is_approve = true and b.is_visible = true
+    AND NOT EXISTS (
+      SELECT 1
+      FROM public.user_block
+      WHERE (blocker_id = u.user_id AND blocked_id = b.user_id)
+          OR (blocker_id = b.user_id AND blocked_id = u.user_id)
+    )
     offset ((${page} - 1 ) * 10) rows 
     fetch next 10 rows only
     `;
@@ -372,8 +460,42 @@ export async function getUserBlog(page, title) {
       "user" u
     on u.user_id = b.user_id
     where b.title like '%${name}%' and b.is_approve = true and b.is_visible = true
+    AND NOT EXISTS (
+      SELECT 1
+      FROM public.user_block
+      WHERE (blocker_id = u.user_id AND blocked_id = b.user_id)
+          OR (blocker_id = b.user_id AND blocked_id = u.user_id)
+    )
   `;
   }
+  const result = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
+  return result;
+}
+
+export async function getMyBlogs(userId) {
+  const sqlQuery = `
+  select 
+	  b.blog_id,
+	  u.user_name,
+	  b.title,
+	  b."content",
+	  b.likes_count,
+	  b.comments_count,
+	  b.image,
+	  b.is_approve,
+	  b.is_visible,
+	  i."name",
+	  b.created_at 
+  from blog b 
+  left join "user" u 
+  on u.user_id = b.user_id
+  left join interest i 
+  on b.interest_id = i.interest_id 
+  where u.user_id = '${userId}'
+  `;
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,

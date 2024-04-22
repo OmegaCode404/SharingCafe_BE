@@ -277,10 +277,14 @@ export async function updateAvatar(req, res) {
 export async function register(req, res) {
   try {
     const user = req.body;
+    if (user.password.length < 6) {
+      throw new Error('Password must be at least 6 characters');
+    }
     const result = await userService.register(user);
     const userDetails = result.dataValues;
     if (userDetails) {
       const email = userDetails.email;
+      firebaseHelper.registerUser(email, userDetails.password);
       const accessToken = jwt.sign({ email: email }, secret_key, {
         expiresIn: '30d',
       });
@@ -292,7 +296,7 @@ export async function register(req, res) {
     }
   } catch (error) {
     console.log(error);
-    res.status(400).send(error);
+    res.status(400).send({ error: error.message });
   }
 }
 
@@ -313,6 +317,64 @@ export async function getProfile(req, res) {
     const currentUserId = req.query.currentUserId;
     const result = await userService.getProfile(userId, currentUserId);
     res.status(200).send(result);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ error: error.message });
+  }
+}
+
+// confirm verification email
+export async function confirmVerificationEmail(req, res) {
+  try {
+    const email = req.query.email;
+    const password = req.query.password;
+    const result = await firebaseHelper.checkEmailVerified(email, password);
+    res.status(200).send({ result: result });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ error: error.message });
+  }
+}
+
+export async function getUserBlockedByUser(req, res) {
+  try {
+    const loginUser = req.loginUser;
+    const result = await userService.getUserBlockedByUser(loginUser.user_id);
+    res.status(200).send(result);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ error: error.message });
+  }
+}
+
+export async function blockingAUser(req, res) {
+  try {
+    const loginUser = req.loginUser;
+    console.log(`~~~~~~~~`, req.body);
+    const { blocked_id } = req.body;
+    console.log(blocked_id);
+    const result = await userService.blockingAUser(
+      loginUser.user_id,
+      blocked_id,
+    );
+    res.status(200).send({ status: 'BLOCKED', message: 'BLOCKED THIS USER' });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ error: error.message });
+  }
+}
+
+export async function unBlockingAUser(req, res) {
+  try {
+    const loginUser = req.loginUser;
+    const { blocked_id } = req.body;
+    const result = await userService.unBlockingAUser(
+      loginUser.user_id,
+      blocked_id,
+    );
+    res
+      .status(200)
+      .send({ status: 'UN-BLOCKED', message: 'UN-BLOCKED THIS USER' });
   } catch (error) {
     console.log(error);
     res.status(500).send({ error: error.message });

@@ -1,4 +1,4 @@
-import { Event, SequelizeInstance } from '../utility/DbHelper.js';
+import { Event, SequelizeInstance, EventParticipation } from '../utility/DbHelper.js';
 
 export async function getEvents(title, date, page) {
   let sqlQuery = '';
@@ -86,6 +86,8 @@ export async function createEvent(eventId, dataObj) {
     background_img: dataObj.background_img,
     is_visible: dataObj.is_visible,
     interest_id: dataObj.interest_id,
+    is_visible: true,
+    participants_count: 0
   });
 }
 
@@ -108,7 +110,8 @@ export async function updateEvent(eventId, eventDetails) {
       participants_count: eventDetails.participants_count,
       interest_id: eventDetails.interest_id,
       background_img: eventDetails.background_img,
-      is_visible: true,
+      address: eventDetails.address,
+      is_visible: eventDetails.is_visible,
     },
     {
       where: { event_id: eventId },
@@ -138,6 +141,12 @@ export async function getNewEvents() {
     "user" u
     on u.user_id = e.organizer_id
     where (e.time_of_event >= '${date.toUTCString()}' or e.end_of_event >= '${date.toUTCString()}') and e.is_approve = true and e.is_visible = true
+    and not exists (
+      select 1
+      from public.user_block
+      where (blocker_id = u.user_id and blocked_id = e.organizer_id)
+          or (blocker_id = e.organizer_id and blocked_id = u.user_id)
+    )
   order by e.time_of_event
   `;
   const result = await SequelizeInstance.query(sqlQuery, {
@@ -162,6 +171,12 @@ export async function getEventsByDate(dateString) {
     "user" u
     on u.user_id = e.organizer_id
     where e.time_of_event >= '${date.toDateString()}'
+    and not exists (
+      select 1
+      from public.user_block
+      where (blocker_id = u.user_id and blocked_id = e.organizer_id)
+          or (blocker_id = e.organizer_id and blocked_id = u.user_id)
+    )
   order by e.time_of_event
   `;
   const result = await SequelizeInstance.query(sqlQuery, {
@@ -193,6 +208,12 @@ export async function getEventsByName(dataObj) {
     "user" u
     on u.user_id = e.organizer_id
   where (e.time_of_event >= '${date1.toUTCString()}' or e.end_of_event <= '${date1.toUTCString()}') and e.title  like '%${name}%'
+  and not exists (
+    select 1
+    from public.user_block
+    where (blocker_id = u.user_id and blocked_id = e.organizer_id)
+        or (blocker_id = e.organizer_id and blocked_id = u.user_id)
+  )
   `;
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
@@ -223,7 +244,13 @@ export async function getPopularEvents() {
   join
     "user" u
     on u.user_id = e.organizer_id
-  where (e.time_of_event >= '${date.toISOString()}' or e.end_of_event <= '${date.toISOString()}') and e.is_approve = true and e.is_visible = true
+  where e.end_of_event >= '${date.toISOString()}' and e.is_approve = true and e.is_visible = true
+  and not exists (
+    select 1
+    from public.user_block
+    where (blocker_id = u.user_id and blocked_id = e.organizer_id)
+        or (blocker_id = e.organizer_id and blocked_id = u.user_id)
+  )
   order by 
     e.time_of_event desc
     , e.participants_count desc
@@ -238,51 +265,57 @@ export async function getPopularEvents() {
 export async function getEventOccurToday() {
   const sqlQuery = `
 SELECT 
-    e.event_id, 
-    e.organizer_id, 
-    e.title, 
-    e.description as body, 
-    e.time_of_event, 
-    e."location", 
-    e.participants_count, 
-    e.is_approve, 
-    e.created_at, 
-    e.background_img, 
-    e.is_visible, 
-    e.interest_id, 
-    e.end_of_event, 
-    e.address,
-    EXTRACT(HOUR FROM e.time_of_event) AS event_hour,
-    EXTRACT(MINUTE FROM e.time_of_event) AS event_minute,
-    EXTRACT(SECOND FROM e.time_of_event) AS event_second,
-    string_to_array(u.token_id, ',') as user_token
+  e.event_id, 
+  e.organizer_id, 
+  e.title, 
+  e.description as body, 
+  e.time_of_event, 
+  e."location", 
+  e.participants_count, 
+  e.is_approve, 
+  e.created_at, 
+  e.background_img, 
+  e.is_visible, 
+  e.interest_id, 
+  e.end_of_event, 
+  e.address,
+  EXTRACT(HOUR FROM e.time_of_event) AS event_hour,
+  EXTRACT(MINUTE FROM e.time_of_event) AS event_minute,
+  EXTRACT(SECOND FROM e.time_of_event) AS event_second,
+  string_to_array(u.token_id, ',') as user_token
 FROM 
-    public."event" e
+  public."event" e
 LEFT JOIN event_participation ep 
-    ON e.event_id = ep.event_id
+  ON e.event_id = ep.event_id
 LEFT JOIN public."user" u 
-    ON ep.user_id = u.user_id
+  ON ep.user_id = u.user_id
 WHERE 
-    DATE(e.time_of_event) = CURRENT_DATE
+  DATE(e.time_of_event) = CURRENT_DATE
+  and not exists (
+    select 1
+    from public.user_block
+    where (blocker_id = u.user_id and blocked_id = e.organizer_id)
+        or (blocker_id = e.organizer_id and blocked_id = u.user_id)
+  )
 GROUP BY 
-    e.event_id, 
-    e.organizer_id, 
-    e.title, 
-    e.description, 
-    e.time_of_event, 
-    e."location", 
-    e.participants_count, 
-    e.is_approve, 
-    e.created_at, 
-    e.background_img, 
-    e.is_visible, 
-    e.interest_id, 
-    e.end_of_event, 
-    e.address,
-    event_hour,
-    event_minute,
-    event_second,
-    user_token
+  e.event_id, 
+  e.organizer_id, 
+  e.title, 
+  e.description, 
+  e.time_of_event, 
+  e."location", 
+  e.participants_count, 
+  e.is_approve, 
+  e.created_at, 
+  e.background_img, 
+  e.is_visible, 
+  e.interest_id, 
+  e.end_of_event, 
+  e.address,
+  event_hour,
+  event_minute,
+  event_second,
+  user_token
   `;
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
@@ -291,14 +324,17 @@ GROUP BY
   return result;
 }
 
-
-export async function getUserEvent (title, date, page){
+export async function getUserEvent(title, date, page) {
   let sqlQuery = '';
   let name = title;
-  if (name == null) {name = ''}
+  if (name == null) {
+    name = '';
+  }
   let date1 = new Date(date);
-  if (date1 == 'Invalid Date') {date1 = new Date(Date.now())}
-  if (page){
+  if (date1 == 'Invalid Date') {
+    date1 = new Date(Date.now());
+  }
+  if (page) {
     sqlQuery = `
     select 
       e.*, u.user_name, i.name
@@ -312,6 +348,12 @@ export async function getUserEvent (title, date, page){
       "user" u
       on u.user_id = e.organizer_id
       where (e.time_of_event >= '${date1.toDateString()}' or e.end_of_event >= '${date1.toDateString()}') and e.title  like '%${name}%' and e.is_approve = true and e.is_visible = true
+      and not exists (
+        select 1
+        from public.user_block
+        where (blocker_id = u.user_id and blocked_id = e.organizer_id)
+            or (blocker_id = e.organizer_id and blocked_id = u.user_id)
+      )
     offset ((${page} - 1) * 5) rows 
  	  fetch next 5 rows only
   `;
@@ -329,8 +371,67 @@ export async function getUserEvent (title, date, page){
       "user" u
       on u.user_id = e.organizer_id
       where (e.time_of_event >= '${date1.toDateString()}' or e.end_of_event >= '${date1.toDateString()}') and e.title  like '%${name}%' and e.is_approve = true and e.is_visible = true
-    `
+      and not exists (
+        select 1
+        from public.user_block
+        where (blocker_id = u.user_id and blocked_id = e.organizer_id)
+            or (blocker_id = e.organizer_id and blocked_id = u.user_id)
+      )
+    `;
   }
+  const result = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
+  return result;
+}
+
+export async function joinEvent(participation_id, event_id, userId) {
+  const sqlQuery = `
+    UPDATE event 
+    SET participants_count = participants_count + 1
+    WHERE event_id = '${event_id}'
+  `;
+  const result = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
+  return await EventParticipation.create({
+    participation_id: participation_id,
+    user_id: userId,
+    event_id: event_id,
+    event_participation_status: 'Đã tham gia',
+  });
+}
+
+export async function leaveEvent(event_id, userId) {
+  const sqlQuery = `
+    UPDATE event 
+    SET participants_count = participants_count - 1
+    WHERE event_id = '${event_id}'
+  `;
+  const result = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
+  EventParticipation.destroy({
+    where: {
+      event_id: event_id,
+      user_id: userId,      
+    },
+  });
+  return result;
+}
+
+export async function getEventParticipants(event_id) {
+  const sqlQuery = `
+  select 
+   	 u.user_id , u.user_name ,u.profile_avatar 
+   	 from "user" u 
+   	 left join event_participation ep 
+   	 on ep.user_id = u.user_id 
+   	 where ep.event_id = '${event_id}'
+  `;
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,

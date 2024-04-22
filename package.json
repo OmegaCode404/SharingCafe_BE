@@ -37,6 +37,7 @@
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.5",
     "pg": "^8.11.3",
+    "plantuml": "^0.0.2",
     "postgres": "^3.3.5",
     "rand-token": "^1.0.1",
     "sequelize": "^6.32.1",

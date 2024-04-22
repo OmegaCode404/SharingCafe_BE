@@ -3,8 +3,14 @@ import { Message, SequelizeInstance } from '../utility/DbHelper.js';
 export async function saveMessage(messageId, messageData) {
   const { from, to, message } = messageData;
   const sqlQuery = `
-    INSERT INTO public.message (message_id, sender_id, receiver_id, "content", created_at, is_read) 
-    VALUES('${messageId}', '${from}','${to}', '${message}', now(), false);
+    INSERT INTO public.message (message_id, sender_id, receiver_id, "content", created_at, is_read)
+    SELECT '${messageId}', '${from}', '${to}', '${message}', now(), false
+    WHERE NOT EXISTS (
+      SELECT 1
+      FROM public.user_block
+      WHERE (blocker_id = '${from}' AND blocked_id = '${to}')
+          OR (blocker_id = '${to}' AND blocked_id = '${from}')
+);
     `;
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.INSERT,

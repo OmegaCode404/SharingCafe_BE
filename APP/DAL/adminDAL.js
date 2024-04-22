@@ -41,20 +41,25 @@ export async function getAdmDetails(email, password) {
 }
 export async function getStatics() {
   const sqlQuery = `
-    SELECT 'Account' AS entity_type, COUNT(*) AS entity_count
-    FROM public.user
-    UNION
-    SELECT 'Blog' AS entity_type, COUNT(*) AS entity_count
-    FROM blog
-    UNION
-    SELECT 'Event' AS entity_type, COUNT(*) AS entity_count
-    FROM event
-    union 
-   	select 'Total Matched' as entity_type, count(um.user_match_id) 
-   	from user_match um 
-   	join user_match_status ums 
-   	 on um.user_match_status_id = ums.user_match_status_id
-   	where ums.user_match_status = 'Accepted'
+  SELECT 'Account' AS entity_type, COUNT(*) AS entity_count
+  FROM public.user
+  UNION
+  SELECT 'Blog' AS entity_type, COUNT(*) AS entity_count
+  FROM blog
+  UNION
+  SELECT 'Event' AS entity_type, COUNT(*) AS entity_count
+  FROM event
+  union 
+   select 'Matched Succeed' as entity_type, count(um.user_match_id) 
+   from user_match um 
+   join user_match_status ums 
+    on um.user_match_status_id = ums.user_match_status_id
+   where ums.user_match_status = 'Accepted'
+   union 
+   select 'Matched Failed' as entity_type, (count(case when ums.user_match_status = 'Dislike' then 1 end) + count(case when ums.user_match_status = 'Declined' then 1 end))
+   from user_match um 
+   join user_match_status ums 
+    on um.user_match_status_id = ums.user_match_status_id
     `;
   const statics = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
@@ -149,6 +154,49 @@ GROUP BY
   event_year, event_month
 ORDER BY 
   event_year, event_month;
+    `;
+  const statics = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
+  return statics;
+}
+
+export async function getScheduleList() {
+  const sqlQuery = `
+  select 
+  s.schedule_id , 
+  u.user_name as sender, 
+  u2.user_name as receiver, 
+  s."content" , 
+  s."location" , 
+  s.schedule_time ,
+  s.is_accept
+  from schedule s
+  join "user" u 
+  on u.user_id = s.sender_id
+  join "user" u2
+  on u2.user_id = s.receiver_id 
+    `;
+  const list = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
+  return list;
+}
+
+export async function getBlogStatics() {
+  const sqlQuery = `
+  SELECT 
+  EXTRACT(YEAR FROM created_at) AS blog_year,
+  EXTRACT(MONTH FROM created_at) AS blog_month,
+  COUNT(*) AS blog_count
+FROM 
+  public."blog"
+GROUP BY 
+  blog_year, blog_month
+ORDER BY 
+  blog_year, blog_month;
     `;
   const statics = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,

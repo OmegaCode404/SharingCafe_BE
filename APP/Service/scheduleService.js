@@ -1,4 +1,5 @@
 import * as scheduleDAL from '../DAL/scheduleDAL.js';
+import * as firebaseHelper from '../utility/FirebaseHelper.js';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function createSchedule(dataObj) {
@@ -10,5 +11,30 @@ export async function getScheduleBetweenUsers(userId, anotherUserId) {
 }
 
 export async function changeStatus(dataObj) {
+  const [schedule] = await scheduleDAL.getScheduleId(dataObj.schedule_id);
+  const tile = `SCHEDULE HAS BEEN UPDATED `;
+  firebaseHelper.sendNotification(
+    schedule.user_from_token,
+    tile,
+    `DEAR ${schedule.user_from}` + schedule.message,
+  );
+  firebaseHelper.sendNotification(
+    schedule.user_to_token,
+    tile,
+    `DEAR ${schedule.user_to}` + schedule.message,
+  );
   return await scheduleDAL.changeStatus(dataObj);
+}
+
+export async function getScheduleHistoryByUserId(dataObj) {
+  return await scheduleDAL.getScheduleHistoryByUserId(dataObj);
+}
+
+export async function createRating(loginUser, dataObj) {
+  const rating_id = uuidv4();
+  return await scheduleDAL.createRating(rating_id, loginUser, dataObj);
+}
+
+export async function getScheduleRating(scheduleId) {
+  return await scheduleDAL.getScheduleRating(scheduleId);
 }

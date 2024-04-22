@@ -488,8 +488,8 @@ const EventParticipation = sequelize.define(
     user_id: {
       type: DataTypes.UUID,
     },
-    eventParticipationStatusId: {
-      type: DataTypes.UUID,
+    event_participation_status: {
+      type: DataTypes.TEXT,
     },
     created_at: {
       type: DataTypes.DATE,
@@ -792,6 +792,58 @@ const LikeBlog = sequelize.define(
   },
 );
 
+const Province = sequelize.define(
+  'province',
+  {
+    province_id: {
+      type: DataTypes.TEXT,
+      primaryKey: true,
+    },
+    province: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+    },
+  },
+  {
+    tableName: 'province',
+    timestamps: false,
+  },
+);
+
+const Rating = sequelize.define(
+  'rating',
+  {
+    rating_id: {
+      type: DataTypes.UUID,
+      primaryKey: true,
+      defaultValue: DataTypes.UUIDV4,
+    },
+    schedule_id: {
+      type: DataTypes.UUID,
+      allowNull: false,
+    },
+    user_id: {
+      type: DataTypes.UUID,
+      allowNull: false,
+    },
+    rating: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+    },
+    content: {
+      type: DataTypes.TEXT,
+    },
+    created_at: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+  },
+  {
+    tableName: 'rating',
+    timestamps: false,
+  },
+);
+
 User.belongsTo(Role, { foreignKey: 'role_id', as: 'UserRole' });
 
 EventReport.belongsTo(User, { foreignKey: 'reporter_id', as: 'reporter' });
@@ -812,10 +864,10 @@ UserStatistics.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
 EventParticipation.belongsTo(Event, { foreignKey: 'event_id', as: 'event' });
 EventParticipation.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
-EventParticipation.belongsTo(EventParticipationStatus, {
-  foreignKey: 'event_participation_status_id',
-  as: 'eventParticipationStatus',
-});
+// EventParticipation.belongsTo(EventParticipationStatus, {
+//   foreignKey: 'event_participation_status_id',
+//   as: 'eventParticipationStatus',
+// });
 
 Event.belongsTo(User, { foreignKey: 'organizer_id', as: 'organizer' });
 Event.hasMany(EventParticipation, {
@@ -869,4 +921,6 @@ export {
   FreeTime,
   FavoriteDrink,
   UserReport,
+  Province,
+  Rating,
 };
