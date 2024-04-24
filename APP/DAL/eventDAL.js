@@ -414,13 +414,13 @@ export async function leaveEvent(event_id, userId) {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
   });
-  EventParticipation.destroy({
+  const deletedEventParticipation = await EventParticipation.destroy({
     where: {
       event_id: event_id,
       user_id: userId,      
     },
   });
-  return result;
+  return deletedEventParticipation;
 }
 
 export async function getEventParticipants(event_id) {

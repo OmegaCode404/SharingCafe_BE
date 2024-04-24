@@ -6,11 +6,12 @@ export async function saveMessage(messageData) {
   try {
     const messageId = await chatService.saveMessage(messageData);
     console.log(messageId);
-    t.commit();
-    return messageId ?? null;
+    await t.commit(); // Await the commit operation
+    return messageId;
   } catch (error) {
     console.error('Error sending message:', error);
-    t.rollback();
+    await t.rollback(); // Await the rollback operation
+    throw error; // Re-throw the error to be handled by the caller
   }
 }
 export async function getMessage(messageId) {

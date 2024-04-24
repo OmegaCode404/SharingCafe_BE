@@ -180,7 +180,7 @@ export async function unLikeBlog(req, res) {
   try {
     const dataObj = req.body;
     const result = await blogService.unlikeBlog(dataObj);
-    res.status(200).send(result);
+    res.status(200).send({result});
     t.commit();
   } catch (error) {
     console.log(error);

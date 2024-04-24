@@ -12,16 +12,18 @@ export async function getScheduleBetweenUsers(userId, anotherUserId) {
 
 export async function changeStatus(dataObj) {
   const [schedule] = await scheduleDAL.getScheduleId(dataObj.schedule_id);
-  const tile = `SCHEDULE HAS BEEN UPDATED `;
+  // const tile = `SCHEDULE HAS BEEN UPDATED `;
+
+  const tile = `LỊCH TRÌNH ĐÃ ĐƯỢC CẬP NHẬT `;
   firebaseHelper.sendNotification(
     schedule.user_from_token,
     tile,
-    `DEAR ${schedule.user_from}` + schedule.message,
+    `KÍNH GỬI ${schedule.user_from}` + schedule.message,
   );
   firebaseHelper.sendNotification(
     schedule.user_to_token,
     tile,
-    `DEAR ${schedule.user_to}` + schedule.message,
+    `KÍNH GỬI ${schedule.user_to}` + schedule.message,
   );
   return await scheduleDAL.changeStatus(dataObj);
 }

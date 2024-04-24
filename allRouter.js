@@ -1123,7 +1123,7 @@ router.get('/api/user/profile/:userId', userController.getProfile);
 
 /**
  * @swagger
- * /api/auth/user/join-event:
+ * /api/auth/user/event/join-event:
  *   post:
  *     security:
  *       - BearerAuth: []
@@ -2429,7 +2429,7 @@ router.post(
  *                 type: string
  *                 description: ID of the user creating the comment
  *                 example: "6ee3437a-8a2d-4769-8d89-cca128a6a086"
- *               blogId:
+ *               blog_id:
  *                 type: string
  *                 description: ID of the blog
  *                 example: "81a695ef-114c-4c4f-9a5e-5245ddeb75ae"
@@ -2459,11 +2459,9 @@ router.post(
  *               like_blog_id:
  *                 type: string
  *                 description: ID
- *                 example: "19b18d03-83db-4840-b836-a8ab15ec5e44"
  *               blog_id:
  *                 type: string
  *                 description: ID of the blog
- *                 example: "6b0883ba-23c4-40a6-8e22-bda8011c4add"
  *     responses:
  *       '201':
  *         description: Successfully unlike blog
@@ -2635,29 +2633,6 @@ router.post(
  *       '500':
  *         description: Internal server error
  */
-
-// /**
-//  * @swagger
-//  * /api/user/events/report/{reportId}:
-//  *   delete:
-//  *     summary: Delete a specific event report by ID
-//  *     tags:
-//  *       - REPORT SECTION
-//  *     parameters:
-//  *       - in: path
-//  *         name: reportId
-//  *         required: true
-//  *         description: ID of the report to be deleted
-//  *         schema:
-//  *           type: string
-//  *     responses:
-//  *       '204':
-//  *         description: Report deleted successfully
-//  *       '404':
-//  *         description: Report not found
-//  *       '500':
-//  *         description: Internal server error
-//  */
 
 /**
  * @swagger
@@ -3020,13 +2995,30 @@ router.get('/api/test', locationController.getMiddlePoint);
  *       - MATCH SECTION
  *     parameters:
  *       - in: query
- *         name: limit
+ *         name: filterByAge
  *         description: 1
  *         required: false
+ *         type: string
+ *         default: 25 - 30
+ *       - in: query
+ *         name: filterByGender
+ *         description: 0
+ *         required: false
+ *         type: string
+ *         default: Nam
+ *       - in: query
+ *         name: filterByAddress
+ *         description: 1
+ *         required: false
+ *         type: string
+ *         default: Thị Xã Sầm Sơn, Tỉnh Thanh Hóa
+ *       - in: query
+ *         name: limit
+ *         description: 0
+ *         required: false
  *         type: integer
- *         default: 1
- *         minimum: 1
- *         maximum: 100
+ *         default: 0
+ *         minimum: 0
  *       - in: query
  *         name: offset
  *         description: 0

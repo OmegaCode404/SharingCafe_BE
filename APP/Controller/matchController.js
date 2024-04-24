@@ -3,16 +3,28 @@ import { SequelizeInstance } from '../utility/DbHelper.js';
 export async function getUserMatchByInterest(req, res, next) {
   try {
     const loginUser = req.loginUser;
+    const filterByAge = req.query.filterByAge || null;
+    const filterByGender = req.query.filterByGender || null;
+    const filterByAddress = req.query.filterByAge || null;
     const limit = req.query.limit || null;
     const offset = req.query.offset || null;
     let result = null;
     if (limit !== null && offset !== null)
       result = await userService.getUserMatchByInterestPaging(
         loginUser.user_id,
+        filterByAge,
+        filterByGender,
+        filterByAddress,
         limit,
         offset,
       );
-    else result = await userService.getUserMatchByInterest(loginUser.user_id);
+    else
+      result = await userService.getUserMatchByInterest(
+        loginUser.user_id,
+        filterByAge,
+        filterByGender,
+        filterByAddress,
+      );
     res.status(200).send(result);
   } catch (error) {
     console.log(error);

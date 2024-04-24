@@ -395,10 +395,10 @@ export async function unlikeBlog(dataObj) {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
   });
-  LikeBlog.destroy({
+  const deletedLikeBlog = await LikeBlog.destroy({
     where: { like_blog_id: dataObj.like_blog_id },
   });
-  return result;
+  return deletedLikeBlog;
 }
 
 export async function deleteComment(commentId, blogId) {

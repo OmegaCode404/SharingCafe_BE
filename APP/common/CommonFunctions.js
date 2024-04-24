@@ -1,3 +1,4 @@
+import * as commonEnums from '../common/CommonEnums.js';
 export function checkRole(loginUser, roleName) {
   console.log(loginUser, roleName);
   return loginUser.role === roleName;
@@ -37,4 +38,10 @@ export function calculateDistance(lat1, lon1, lat2, lon2) {
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
   return earthRadiusKm * c;
+}
+export function getValueByLabel(label) {
+  const matchTranslate = commonEnums.MATCH_TRANSLATE.find(
+    (item) => item.label === label,
+  );
+  return matchTranslate ? matchTranslate.value : null;
 }

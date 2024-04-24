@@ -182,7 +182,7 @@ export async function leaveEvent(req, res) {
     const event_id = req.query.event_id;
     const userId = req.loginUser.user_id;
     const result = await eventService.leaveEvent(event_id, userId);
-    res.status(200).send(result);
+    res.status(200).send({result});
     t.commit();
   } catch (error) {
     console.log(error);

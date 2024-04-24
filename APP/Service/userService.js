@@ -232,8 +232,18 @@ export async function getUserInfoByEmail(email) {
   const result = await userDAL.getUserDetailsByEmail(email);
   return result;
 }
-export async function getUserMatchByInterest(userId) {
-  const result = await userDAL.getUserMatchByInterest(userId);
+export async function getUserMatchByInterest(
+  userId,
+  filterByAge,
+  filterByGender,
+  filterByAddress,
+) {
+  const result = await userDAL.getUserMatchByInterest(
+    userId,
+    filterByAge,
+    filterByGender,
+    filterByAddress,
+  );
   return result;
 }
 export async function getUserMatchWithStatus(userId, status) {
@@ -250,10 +260,20 @@ export async function getUserMatchWithPendingStatus(userId) {
   const result = await userDAL.getUserMatchWithPendingStatus(userId);
   return result;
 }
-export async function getUserMatchByInterestPaging(userId, limit, offset) {
+export async function getUserMatchByInterestPaging(
+  userId,
+  filterByAge,
+  filterByGender,
+  filterByAddress,
+  limit,
+  offset,
+) {
   const [user] = await userDAL.getUserInfoById(userId);
   let result = await userDAL.getUserMatchByInterestPaging(
     userId,
+    filterByAge,
+    filterByGender,
+    filterByAddress,
     limit,
     offset,
   );
@@ -268,7 +288,12 @@ export async function getUserMatchByInterestPaging(userId, limit, offset) {
       ),
     };
   });
-  const list = await userDAL.getUserMatchByInterest(userId);
+  const list = await userDAL.getUserMatchByInterest(
+    userId,
+    filterByAge,
+    filterByGender,
+    filterByAddress,
+  );
   return { total: list.length, limit, offset, data: result };
 }
 
@@ -315,9 +340,18 @@ export async function updateUserMatchStatus(userId, dataObj) {
     statusStage.user_match_status_id,
     upsertOnly,
   );
-  const title = `MATCHING FEATURE`;
-  const bodyCurrent = `MATCHING STATUS : ${statusStage.user_match_status} with ${userLiked.user_name}`;
-  const bodyLike = `MATCHING STATUS : ${statusStage.user_match_status} by ${userCurrent.user_name}`;
+  // const title = `MATCHING FEATURE`;
+  // const bodyCurrent = `MATCHING STATUS : ${statusStage.user_match_status} with ${userLiked.user_name}`;
+  // const bodyLike = `MATCHING STATUS : ${statusStage.user_match_status} by ${userCurrent.user_name}`;
+
+  const title = `Kết nối`;
+  const bodyCurrent = `Bạn ${commonFunctions.getValueByLabel(
+    statusStage.user_match_status,
+  )} với ${userLiked.user_name}`;
+  const bodyLike = `Bạn ${commonFunctions.getValueByLabel(
+    statusStage.user_match_status,
+  )} bởi ${userCurrent.user_name}`;
+
   const [newNotificationStatus] =
     await notificationDAL.getNotificationNewStatus();
 

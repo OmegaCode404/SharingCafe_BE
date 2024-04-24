@@ -56,18 +56,62 @@ export async function changeStatus(dataObj) {
 
 export async function getScheduleHistoryByUserId(userId) {
   const sqlQuery = `
-        SELECT
-            *
-        FROM
-            public.schedule
-        WHERE
-            sender_id = '${userId}'
-            OR receiver_id = '${userId}'
-            AND schedule_time < NOW()
-        ORDER BY
-            schedule_time DESC
+  SELECT
+  s.schedule_id,
+  s."content",
+  s.schedule_time,
+  s."location",
+  s.sender_id, 
+  u2.user_name as sender,
+  u2.profile_avatar as sender_avatar,
+  s.receiver_id ,
+  u3.user_name as receiver,
+  u3.profile_avatar as receiver_avatar,
+  s.is_accept,
+  s.created_at,
+  jsonb_agg(
+      jsonb_build_object(
+      'rating_id', r.rating_id ,
+      'user_id', u.user_id ,
+      'user_name', u.user_name ,
+      'content', r."content"  ,
+      'rating', r.rating
+      ) 
+    ) as rating
+  FROM
+    schedule s
+  LEFT JOIN
+    rating r 
+    on r.schedule_id = s.schedule_id
+  LEFT JOIN 
+    "user" u 
+    on r.user_id = u.user_id
+  LEFT JOIN
+    "user" u2
+    on s.sender_id  = u2.user_id 
+  LEFT JOIN 
+    "user" u3 
+    on s.receiver_id = u3.user_id 
+  WHERE
+    sender_id = '${userId}'
+    OR receiver_id = '${userId}'
+    AND schedule_time < NOW()
+  GROUP BY 
+    s.schedule_id, 
+    s."content", 
+    s.schedule_time, 
+    s.is_accept,
+    s.created_at,
+    s."location",
+    s.sender_id, 
+    u2.user_name,
+    u2.profile_avatar,
+    s.receiver_id ,
+    u3.user_name,
+    u3.profile_avatar
+    ORDER BY
+      schedule_time desc
     `;
-
   const userDetails = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,

@@ -54,7 +54,7 @@ export async function getStatics() {
    from user_match um 
    join user_match_status ums 
     on um.user_match_status_id = ums.user_match_status_id
-   where ums.user_match_status = 'Accepted'
+   where ums.user_match_status = 'Matched'
    union 
    select 'Matched Failed' as entity_type, (count(case when ums.user_match_status = 'Dislike' then 1 end) + count(case when ums.user_match_status = 'Declined' then 1 end))
    from user_match um 
