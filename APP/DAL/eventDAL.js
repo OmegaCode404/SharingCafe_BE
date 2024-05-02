@@ -1,4 +1,8 @@
-import { Event, SequelizeInstance, EventParticipation } from '../utility/DbHelper.js';
+import {
+  Event,
+  SequelizeInstance,
+  EventParticipation,
+} from '../utility/DbHelper.js';
 
 export async function getEvents(title, date, page) {
   let sqlQuery = '';
@@ -8,7 +12,7 @@ export async function getEvents(title, date, page) {
   }
   let date1 = new Date(date);
   if (date1 == 'Invalid Date') {
-    date1 = new Date(Date.now());
+    date1 = new Date('1/1/1000');
   }
   console.log(date1.toUTCString());
   if (page) {
@@ -25,6 +29,7 @@ export async function getEvents(title, date, page) {
       "user" u
       on u.user_id = e.organizer_id
     where  (e.time_of_event >= '${date1.toUTCString()}' or e.end_of_event <= '${date1.toUTCString()}') and e.title  like '%${name}%'
+    order by e.created_at desc
     offset ((${page} - 1) * 5) rows 
  	  fetch next 5 rows only
   `;
@@ -41,7 +46,8 @@ export async function getEvents(title, date, page) {
     join
       "user" u
       on u.user_id = e.organizer_id
-      where (e.time_of_event >= '${date1.toUTCString()}' or e.end_of_event >= '${date1.toUTCString()}') and e.title  like '%${name}%'
+    where  (e.time_of_event >= '${date1.toUTCString()}' or e.end_of_event <= '${date1.toUTCString()}') and e.title  like '%${name}%'
+    order by e.created_at desc
     `;
   }
   console.log(sqlQuery);
@@ -55,7 +61,7 @@ export async function getEvents(title, date, page) {
 export async function getEvent(eventId) {
   const sqlQuery = `
   select 
-    e.*, u.user_name, i.name
+    e.*, u.user_id, u.user_name, i.name
   from
     public."event" e 
   left join 
@@ -84,10 +90,10 @@ export async function createEvent(eventId, dataObj) {
     location: dataObj.location,
     address: dataObj.address,
     background_img: dataObj.background_img,
-    is_visible: dataObj.is_visible,
+    is_approve: true,
     interest_id: dataObj.interest_id,
     is_visible: true,
-    participants_count: 0
+    participants_count: 0,
   });
 }
 
@@ -290,7 +296,7 @@ LEFT JOIN event_participation ep
 LEFT JOIN public."user" u 
   ON ep.user_id = u.user_id
 WHERE 
-  DATE(e.time_of_event) = CURRENT_DATE
+  DATE(e.time_of_event) = CURRENT_DATE and e.is_approve = true and e.is_visible = true
   and not exists (
     select 1
     from public.user_block
@@ -417,7 +423,7 @@ export async function leaveEvent(event_id, userId) {
   const deletedEventParticipation = await EventParticipation.destroy({
     where: {
       event_id: event_id,
-      user_id: userId,      
+      user_id: userId,
     },
   });
   return deletedEventParticipation;

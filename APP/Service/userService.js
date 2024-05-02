@@ -340,11 +340,8 @@ export async function updateUserMatchStatus(userId, dataObj) {
     statusStage.user_match_status_id,
     upsertOnly,
   );
-  // const title = `MATCHING FEATURE`;
-  // const bodyCurrent = `MATCHING STATUS : ${statusStage.user_match_status} with ${userLiked.user_name}`;
-  // const bodyLike = `MATCHING STATUS : ${statusStage.user_match_status} by ${userCurrent.user_name}`;
 
-  const title = `Kết nối`;
+  const title = `TÍNH NĂNG KẾT NỐI`;
   const bodyCurrent = `Bạn ${commonFunctions.getValueByLabel(
     statusStage.user_match_status,
   )} với ${userLiked.user_name}`;
@@ -404,7 +401,7 @@ export async function getDistance(
 export async function getProfile(userId, currentUserId) {
   var currentUserLocation = await userDAL.getLocationByUserId(currentUserId);
   var userLocation = await userDAL.getLocationByUserId(userId);
-  var distance = await getDistance(
+  var distance = await commonFunctions.calculateDistance(
     userLocation.lat,
     userLocation.lng,
     currentUserLocation.lat,
@@ -519,8 +516,8 @@ export async function getUserBlockedByUser(userId) {
   return await userDAL.getUserBlockedByUser(userId);
 }
 export async function blockingAUser(userId, blockedId) {
-  const [userCurrent] = await userDAL.getUserInfoById(userId);
-  const [userLiked] = await userDAL.getUserInfoById(blockedId);
+  // const [userCurrent] = await userDAL.getUserInfoById(userId);
+  // const [userLiked] = await userDAL.getUserInfoById(blockedId);
   const status = await matchDAL.getMatchStatus();
   const [match] = await matchDAL.getMatchCouple(userId, blockedId);
   console.log(match);

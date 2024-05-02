@@ -57,6 +57,7 @@ SELECT ih.interest_id,i.interest_id, i."name", i.image ,  COUNT(b.blog_id) AS bl
 FROM interest_hierarchy ih
 LEFT JOIN blog b ON b.interest_id = ih.interest_id
 inner join interest i on ih.interest_id = i.interest_id
+where i.parent_interest_id is null
 GROUP BY ih.interest_id,i.interest_id
 order by COUNT(b.blog_id) desc 
   `;

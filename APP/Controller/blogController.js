@@ -15,8 +15,9 @@ export async function getBlogs(req, res) {
 // GET A BLOG BY ID
 export async function getBlog(req, res) {
   try {
+    const userId = req.query.userId;
     const blogId = req.params.blogId;
-    const result = await blogService.getBlog(blogId);
+    const result = await blogService.getBlog(blogId, userId);
     res.status(200).send(result);
   } catch (error) {
     console.log(error);

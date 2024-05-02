@@ -60,6 +60,9 @@ export async function getStatics() {
    from user_match um 
    join user_match_status ums 
     on um.user_match_status_id = ums.user_match_status_id
+    UNION
+  SELECT 'Schedule' AS entity_type, COUNT(*) AS entity_count
+  FROM schedule
     `;
   const statics = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,

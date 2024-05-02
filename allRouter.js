@@ -1669,8 +1669,6 @@ router.put('/api/admin/event/:eventId', admController.updateEventStatus);
  *
  * /api/event:
  *   get:
- *     security:
- *       - BearerAuth: []
  *     summary: Get all events
  *     description: Retrieve a list of all events.
  *     tags:
@@ -2066,6 +2064,13 @@ router.post(
  *         schema:
  *           type: string
  *         example: f4b02935-dbe1-4b8a-a0af-8cbd92c71c35
+ *       - in: query
+ *         name: userId
+ *         required: false
+ *         description: ID of the loggedUser
+ *         schema:
+ *           type: string
+ *         example: b43cc80d-9c56-40c0-b170-4950b8cb702e
  *     responses:
  *       '200':
  *         description: Successful response
@@ -2177,6 +2182,9 @@ router.post(
  *               is_approve:
  *                 type: boolean
  *                 description: Updated approval status of the blog
+ *               interest_id:
+ *                 type: string
+ *                 description: Update interest of the blog
  *     responses:
  *       '200':
  *         description: Blog updated successfully
@@ -2542,6 +2550,9 @@ router.post(
  *                 type: string
  *                 description: ID of the blog
  *                 example: "9d47a0e3-9f5c-4108-9985-ba52d467a6c2"
+ *               content:
+ *                 type: string
+ *                 description: reason to report
  *               report_status_id:
  *                 type: string
  *                 description: ID of the report status
@@ -2621,6 +2632,9 @@ router.post(
  *                 type: string
  *                 description: ID of the event
  *                 example: "50b415b6-b874-429c-9f31-56db62ff0c13"
+ *               content:
+ *                 type: string
+ *                 description: reason to report
  *               report_status_id:
  *                 type: string
  *                 description: ID of the report status
@@ -2677,6 +2691,9 @@ router.post(
  *                 type: string
  *                 description: ID of the user
  *                 example: "716ab41a-a01e-46ac-a907-f0c1419f212f"
+ *               content:
+ *                 type: string
+ *                 description: reason to report
  *               report_status_id:
  *                 type: string
  *                 description: ID of the report status

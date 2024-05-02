@@ -132,13 +132,12 @@ export async function updateUserToken(email, token) {
   let sqlQuery = `
       UPDATE public."user" 
       SET 
-        token_id = :token
+        token_id = '${token}'
       WHERE 
-        email = :email
+        email = '${email}'
     `;
 
   let [result] = await SequelizeInstance.query(sqlQuery, {
-    replacements: { email: email, token: token },
     type: SequelizeInstance.QueryTypes.UPDATE,
   });
 
@@ -464,12 +463,27 @@ INNER JOIN
 INNER JOIN 
     user_match_status ums ON um.user_match_status_id = ums.user_match_status_id 
 WHERE 
-    (um.current_user_id = '${userId}' OR um.user_id_liked = '${userId}')
+    (um.user_id_liked = '${userId}' or um.current_user_id = '${userId}')
     AND ums.user_match_status_id IS NOT null
     and u.user_id <> '${userId}'
   `;
 
-  if (status) {
+  if (status == 'Pending') {
+    sqlQuery = ` 
+    SELECT 
+    *
+FROM 
+    public.user u
+INNER JOIN 
+    user_match um ON um.user_id_liked = u.user_id OR um.current_user_id = u.user_id 
+INNER JOIN 
+    user_match_status ums ON um.user_match_status_id = ums.user_match_status_id 
+WHERE 
+    um.user_id_liked = '${userId}'
+    AND ums.user_match_status_id IS NOT null
+    and u.user_id <> '${userId}'
+    AND ums.user_match_status = '${status}'`;
+  } else if (status == 'Matched'){
     sqlQuery += ` AND ums.user_match_status = '${status}'`;
   }
   let userDetails = await SequelizeInstance.query(sqlQuery, {
@@ -870,10 +884,9 @@ export async function deleteUserInterests(userId) {
 export async function upsertInterests(data) {
   let sqlQuery = `
   INSERT INTO public.user_interest (user_interest_id, interest_id, user_id, created_at) 
-  VALUES(gen_random_uuid(), :interest_id, :user_id, now())
+  VALUES(gen_random_uuid(), '${data.interest_id}', '${data.user_id}', now())
   `;
   let result = await SequelizeInstance.query(sqlQuery, {
-    replacements: data,
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
   });
@@ -895,10 +908,9 @@ export async function deleteUnlikeTopics(userId) {
 export async function upsertUnlikeTopics(data) {
   let sqlQuery = `
   INSERT INTO public.unlike_topic (unlike_topic_id, user_id, topic, created_at) 
-  VALUES(gen_random_uuid(), :user_id, :topic, now());
+  VALUES(gen_random_uuid(), '${data.user_id}', '${data.topic}', now());
   `;
   let result = await SequelizeInstance.query(sqlQuery, {
-    replacements: data,
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
   });
@@ -921,10 +933,9 @@ export async function deletePersonalProblems(userId) {
 export async function upsertPersonalProblems(data) {
   let sqlQuery = `
   INSERT INTO public.personal_problem (personal_problem_id, user_id, problem, created_at) 
-  VALUES(gen_random_uuid(), :user_id, :problem, now());
+  VALUES(gen_random_uuid(), '${data.user_id}', '${data.problem}', now());
   `;
   let result = await SequelizeInstance.query(sqlQuery, {
-    replacements: data,
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
   });
@@ -946,10 +957,9 @@ export async function deleteFavoriteDrinks(userId) {
 export async function upsertFavoriteDrinks(data) {
   let sqlQuery = `
   INSERT INTO public.favorite_drink (favorite_drink_id, user_id, favorite_drink, created_at) 
-  VALUES(gen_random_uuid(), :user_id, :favorite_drink, now());
+  VALUES(gen_random_uuid(), '${data.user_id}', '${data.favorite_drink}', now());
   `;
   let result = await SequelizeInstance.query(sqlQuery, {
-    replacements: data,
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
   });
@@ -971,10 +981,9 @@ export async function deleteFreeTimes(userId) {
 export async function upsertFreeTimes(data) {
   let sqlQuery = `
   INSERT INTO public.free_time (free_time_id, user_id, free_time, created_at) 
-  VALUES(gen_random_uuid(), :user_id, :free_time, now());
+  VALUES(gen_random_uuid(), '${data.user_id}', '${data.free_time}', now());
   `;
   let result = await SequelizeInstance.query(sqlQuery, {
-    replacements: data,
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
   });
@@ -1063,10 +1072,9 @@ export async function getUserBlockedByUser(userId) {
 from "user" u 
 inner join user_block ub 
 on blocked_id = u.user_id 
-and ub.blocker_id = :userId
+and ub.blocker_id = '${userId}'
   `;
   let result = await SequelizeInstance.query(sqlQuery, {
-    replacements: { userId },
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
   });
@@ -1076,11 +1084,10 @@ and ub.blocker_id = :userId
 export async function blockingAUser(userId, blockedId) {
   let sqlQuery = `
   INSERT INTO public.user_block (blocker_id, blocked_id, created_at)
-VALUES (:userId, :blockedId, now())
+VALUES ('${userId}', '${blockedId}', now())
 ON CONFLICT (blocker_id, blocked_id) DO NOTHING;
   `;
   let result = await SequelizeInstance.query(sqlQuery, {
-    replacements: { userId, blockedId },
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
   });
@@ -1089,10 +1096,9 @@ ON CONFLICT (blocker_id, blocked_id) DO NOTHING;
 export async function unBlockingAUser(userId, blockedId) {
   let sqlQuery = `
     DELETE FROM public.user_block 
-    WHERE blocker_id = :userId AND blocked_id = :blockedId
+    WHERE blocker_id = '${userId}' AND blocked_id = '${blockedId}'
   `;
   let result = await SequelizeInstance.query(sqlQuery, {
-    replacements: { userId, blockedId },
     type: SequelizeInstance.QueryTypes.DELETE, // Changed QueryTypes.SELECT to QueryTypes.DELETE
     raw: true,
   });

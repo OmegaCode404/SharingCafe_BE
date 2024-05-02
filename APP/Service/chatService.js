@@ -9,14 +9,15 @@ export async function saveMessage(messageData) {
   if (block) {
     return null; // If blocked, return null
   }
-  await chatDAL.saveMessage(messageId, messageData);
   const { from, to, messageContent } = messageData;
   const [userFrom] = await userDAL.getUserInfoById(from);
   const [userTo] = await userDAL.getUserInfoById(to);
 
   const title = `TÍNH NĂNG TRÒ CHUYỆN`;
-  const body = `${messageContent} bởi ${userFrom.user_name}`;
+  const body = `Tin nhắn mới: "${messageContent}" bởi ${userFrom.user_name}`;
   firebaseHelper.sendNotification(userTo.token_id, title, body);
+  await chatDAL.saveMessage(messageId, messageData);
+
   return messageId;
 }
 export async function getChatHistory(userIdFrom, userIdTo, limit, offset) {

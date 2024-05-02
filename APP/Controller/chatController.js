@@ -6,7 +6,7 @@ export async function saveMessage(messageData) {
   try {
     const messageId = await chatService.saveMessage(messageData);
     console.log(messageId);
-    await t.commit(); // Await the commit operation
+    await t.commit();
     return messageId;
   } catch (error) {
     console.error('Error sending message:', error);
