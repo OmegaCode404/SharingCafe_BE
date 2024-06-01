@@ -31,6 +31,7 @@ export async function getBlogs(page, title) {
       WHERE (blocker_id = u.user_id AND blocked_id = b.user_id)
           OR (blocker_id = b.user_id AND blocked_id = u.user_id)
     )
+    order by b.created_at desc
     offset ((${page} - 1 ) * 10) rows 
     fetch next 10 rows only
     `;
@@ -54,6 +55,7 @@ export async function getBlogs(page, title) {
       WHERE (blocker_id = u.user_id AND blocked_id = b.user_id)
           OR (blocker_id = b.user_id AND blocked_id = u.user_id)
     )
+    order by b.created_at desc
   `;
   }
   const result = await SequelizeInstance.query(sqlQuery, {
@@ -65,8 +67,8 @@ export async function getBlogs(page, title) {
 
 export async function getBlog(blogId) {
   const sqlQuery = `
-  select 
-    b.*, u.user_name, u.profile_avatar, i.name
+ select 
+    b.*, u.user_name, u.profile_avatar, i.name, u.token_id 
   from 
     blog b 
   join 
@@ -91,12 +93,29 @@ export async function getBlog(blogId) {
   return result;
 }
 
+export async function isUserLikeBlog(blogId, loggedUserId) {
+  const sqlQuery = `
+  select 
+    * 
+  from 
+    like_blog 
+  where 
+    blog_id = '${blogId}' 
+    and user_id = '${loggedUserId}'
+  `;
+  const result = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
+  return result;
+}
+
 export async function createBlog(blogId, dataObj) {
   return await Blog.create({
     blog_id: blogId,
     user_id: dataObj.user_id,
     title: dataObj.title,
-    contetn: dataObj.content,
+    content: dataObj.content,
     image: dataObj.image,
     likes_count: 0,
     comments_count: 0,

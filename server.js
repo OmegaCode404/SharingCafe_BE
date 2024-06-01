@@ -110,25 +110,33 @@ io.on('connection', (socket) => {
   console.log('Authorization header:', accessToken);
   socket.on('message', async (data) => {
     console.log('Received data:', data);
-    const messageId = await chatController.saveMessage(data);
-    if(messageId) {
-      const message = await chatController.getMessage(messageId);
-      io.emit('message', message);
-    } else {
-      io.emit('message', "USER GOT BLOCKED");
+    let messageId = null
+    let message = null
+    console.log(data)
+    let responseMessage = data
+    if(data?.appointment == null){
+      responseMessage = "USER GOT BLOCKED"
+      messageId = await chatController.saveMessage(data);
+      console.log(messageId)
+      if(messageId){
+        message = await chatController.getMessage(messageId);
+        responseMessage = message
+      }
     }
+    io.emit('message', responseMessage);
+
   });
 });
 // Schedule the task to run every 5 minutes
-import cron from 'node-cron';
+// import cron from 'node-cron';
 
-cron.schedule('*/30 * * * * *', async () => {
-  try {
-    await eventService.sendNotificationIfEventOccurToday(); 
-  } catch (error) {
-    console.error('Error:', error);
-  }
-});
+// cron.schedule('*/30 * * * * *', async () => {
+//   try {
+//     await eventService.sendNotificationIfEventOccurToday(); 
+//   } catch (error) {
+//     console.error('Error:', error);
+//   }
+// });
 
 // Initialize Firebase
 admin.initializeApp({

@@ -11,7 +11,7 @@ export async function getAdmDetails(email, password) {
       'profile_avatar',
       'story',
       'registration',
-      'gender',
+      'gender_id',
       'age',
       'purpose',
       'favorite_location',
@@ -60,6 +60,9 @@ export async function getStatics() {
    from user_match um 
    join user_match_status ums 
     on um.user_match_status_id = ums.user_match_status_id
+    UNION
+  SELECT 'Schedule' AS entity_type, COUNT(*) AS entity_count
+  FROM schedule
     `;
   const statics = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
@@ -70,7 +73,20 @@ export async function getStatics() {
 export async function getUsers() {
   const sqlQuery = `
   SELECT 
-    u.*,
+    u.user_name,
+    u.phone,
+    u.email,
+    u.profile_avatar,
+    u.story,
+    u.registration,
+    u.is_available,
+    u.purpose,
+    u.favorite_location,
+    DATE_PART('year', AGE(current_date, u.dob)) AS age,
+    u.lat,
+    u.lng,
+    u.token_id, 
+    g.gender, d.district, p.province,
     json_agg(
         json_build_object(
             'interest_id', ui.interest_id,
@@ -94,8 +110,16 @@ export async function getUsers() {
           ORDER BY 
               ui.user_id, ui.interest_id  
       ) ui ON ui.user_id = u.user_id
+  LEFT JOIN 
+    gender g ON g.gender_id = u.gender_id
+  LEFT JOIN
+    district d ON d.district_id = u.district_id
+  LEFT JOIN
+    province p ON p.province_id = u.province_id
   GROUP BY 
-      u.user_id, u.role_id; 
+      u.user_id, u.role_id, g.gender, d.district, p.province
+  ORDER BY
+      u.registration desc
   `;
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
@@ -171,12 +195,32 @@ export async function getScheduleList() {
   s."content" , 
   s."location" , 
   s.schedule_time ,
-  s.is_accept
+  s.is_accept,
+  s.created_at,
+  coalesce(jsonb_agg(
+    jsonb_build_object(
+    'rating_id', r.rating_id ,
+    'user_id', u.user_id ,
+    'user_name', u.user_name ,
+    'content', r."content"  ,
+    'rating', r.rating
+    ) 
+  ) FILTER (WHERE r.rating_id IS NOT NULL), '[]') as rating
   from schedule s
-  join "user" u 
-  on u.user_id = s.sender_id
-  join "user" u2
-  on u2.user_id = s.receiver_id 
+  LEFT JOIN
+    rating r 
+    on r.schedule_id = s.schedule_id
+  left join 
+    "user" u 
+    on u.user_id = s.sender_id
+  left join 
+    "user" u2
+    on u2.user_id = s.receiver_id
+  left join
+    "user" u3 
+    on r.user_id = u3.user_id
+  group by s.schedule_id, u.user_name, u2.user_name
+  order by s.created_at desc
     `;
   const list = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,

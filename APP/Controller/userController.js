@@ -380,3 +380,55 @@ export async function unBlockingAUser(req, res) {
     res.status(500).send({ error: error.message });
   }
 }
+export async function getUserFilterSetting(req, res, next) {
+  try {
+    const loginUser = req.loginUser;
+    if (!loginUser) throw new Error(`YOU MUST LOGIN TO SETTING `);
+    const result = await userService.getUserFilterSetting(loginUser.user_id);
+    res.send(result ? result : {});
+  } catch (e) {
+    console.log(e);
+    res.send(e);
+  }
+}
+
+export async function upsertUserFilterSetting(req, res, next) {
+  const t = await SequelizeInstance.transaction();
+  try {
+    const loginUser = req.loginUser;
+    if (!loginUser) throw new Error(`YOU MUST LOGIN TO SETTING `);
+    const dataObj = req.body;
+    await userService.upsertUserFilterSetting(loginUser.user_id, dataObj);
+    const result = await userService.getUserFilterSetting(loginUser.user_id);
+    res.send(result);
+    t.commit();
+  } catch (e) {
+    t.rollback();
+    console.log(e);
+    res.send(e);
+  }
+}
+
+export async function getUserByFilterSetting(req, res, next) {
+  try {
+    const loginUser = req.loginUser;
+    const limit = req.query.limit;
+    const offset = req.query.offset;
+    if (!loginUser) throw new Error(`YOU MUST LOGIN TO SETTING `);
+    const result = await userService.getUserByFilterSetting(loginUser.user_id, limit, offset);
+    res.send(result.length ? result : []);
+  } catch (e) {
+    console.log(e);
+    res.send(e);
+  }
+}
+
+export async function getGender(req, res) {
+  try {
+    const result = await userService.getGender();
+    res.status(200).send(result);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ error: error.message });
+  }
+}

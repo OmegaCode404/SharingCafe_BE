@@ -11,7 +11,7 @@ export const MATCH_STATUS = {
 };
 export const MATCH_TRANSLATE = [
   { label: 'Matched', value: 'đồng ý kết bạn' },
-  { label: 'Pending', value: 'nhận lời mời kết bạn' },
+  { label: 'Pending', value: 'vừa gủi lời mời kết bạn' },
   { label: 'Declined', value: 'từ chối lời mời kết bạn' },
   { label: 'Accepted', value: 'chấp nhận lời mời' },
   { label: 'Dislike', value: 'không hứng thú' },

@@ -30,13 +30,12 @@ export async function getNotificationNewStatus() {
 export async function createNotification(userId, content, statusId) {
   const sqlQuery = `
         INSERT INTO public.notification (notification_id, user_id, notification_status_id, created_at, content) 
-        VALUES (gen_random_uuid(), :userId, :statusId, now(), :content)
+        VALUES (gen_random_uuid(), '${userId}', '${statusId}', now(), '${content}')
         RETURNING *;
     `;
 
   try {
     const result = await SequelizeInstance.query(sqlQuery, {
-      replacements: { userId, content, statusId },
       type: SequelizeInstance.QueryTypes.INSERT,
     });
     return result;

@@ -12,6 +12,7 @@ import * as scheduleController from './APP/Controller/scheduleController.js';
 import * as reportController from './APP/Controller/reportController.js';
 import * as locationController from './APP/Controller/locationController.js';
 import * as notificationController from './APP/Controller/NotificationController.js';
+import * as mapController from './APP/Controller/mapController.js';
 const router = express.Router();
 
 /**
@@ -490,7 +491,7 @@ router.get('/api/admin/blog-statics', admController.getBlogStatics);
  *               phone:
  *                 type: string
  *                 description: User phone to be updated
- *               gender:
+ *               gender_id:
  *                 type: string
  *                 description: User gender to be updated
  *               age:
@@ -508,6 +509,15 @@ router.get('/api/admin/blog-statics', admController.getBlogStatics);
  *               profile_avatar:
  *                  type: string
  *                  description: User avatar to be updated
+ *               dob:
+ *                  type: string
+ *                  description: User date of birth to be updated
+ *               province_id:
+ *                  type: string
+ *                  description: Id of province to be updated
+ *               district_id:
+ *                  type: string
+ *                  description: Id of disctrict to be updated
  *     responses:
  *       '200':
  *         description: User updated successfully
@@ -822,6 +832,23 @@ router.get('/api/admin/blog-statics', admController.getBlogStatics);
  *       '500':
  *         description: Internal server error
  */
+
+/**
+ * @swagger
+ * /api/user/gender:
+ *   get:
+ *     summary: Get All gender option
+ *     description: Retrieve gender option
+ *     tags:
+ *      - USER SECTION
+ *     responses:
+ *       '200':
+ *         description: Successfully retrieved province.
+ *       '400':
+ *         description: Bad request. Invalid parameters provided.
+ *       '500':
+ *         description: An internal server error occurred.
+ */
 router.put('/api/auth/user/update-interests', userController.upsertInterests);
 router.put(
   '/api/auth/user/update-unlike-topic',
@@ -857,6 +884,8 @@ router.get(
   '/api/user/confirmVerificationEmail',
   userController.confirmVerificationEmail,
 );
+
+router.get('/api/user/gender', userController.getGender);
 
 router.post('/api/auth/user/block/block-user', userController.blockingAUser);
 router.delete(
@@ -1669,8 +1698,6 @@ router.put('/api/admin/event/:eventId', admController.updateEventStatus);
  *
  * /api/event:
  *   get:
- *     security:
- *       - BearerAuth: []
  *     summary: Get all events
  *     description: Retrieve a list of all events.
  *     tags:
@@ -2066,6 +2093,13 @@ router.post(
  *         schema:
  *           type: string
  *         example: f4b02935-dbe1-4b8a-a0af-8cbd92c71c35
+ *       - in: query
+ *         name: userId
+ *         required: false
+ *         description: ID of the loggedUser
+ *         schema:
+ *           type: string
+ *         example: b43cc80d-9c56-40c0-b170-4950b8cb702e
  *     responses:
  *       '200':
  *         description: Successful response
@@ -2177,6 +2211,9 @@ router.post(
  *               is_approve:
  *                 type: boolean
  *                 description: Updated approval status of the blog
+ *               interest_id:
+ *                 type: string
+ *                 description: Update interest of the blog
  *     responses:
  *       '200':
  *         description: Blog updated successfully
@@ -2542,6 +2579,9 @@ router.post(
  *                 type: string
  *                 description: ID of the blog
  *                 example: "9d47a0e3-9f5c-4108-9985-ba52d467a6c2"
+ *               content:
+ *                 type: string
+ *                 description: reason to report
  *               report_status_id:
  *                 type: string
  *                 description: ID of the report status
@@ -2621,6 +2661,9 @@ router.post(
  *                 type: string
  *                 description: ID of the event
  *                 example: "50b415b6-b874-429c-9f31-56db62ff0c13"
+ *               content:
+ *                 type: string
+ *                 description: reason to report
  *               report_status_id:
  *                 type: string
  *                 description: ID of the report status
@@ -2677,6 +2720,9 @@ router.post(
  *                 type: string
  *                 description: ID of the user
  *                 example: "716ab41a-a01e-46ac-a907-f0c1419f212f"
+ *               content:
+ *                 type: string
+ *                 description: reason to report
  *               report_status_id:
  *                 type: string
  *                 description: ID of the report status
@@ -3241,6 +3287,9 @@ router.get('/api/test', locationController.getMiddlePoint);
  *                 type: string
  *                 description: Rating of the meeting
  *                 example: "2"
+ *               user_id_rated:
+ *                 type: string
+ *                 description: ID of the user for rated
  *     responses:
  *       '201':
  *         description: Rating created successfully
@@ -3642,4 +3691,343 @@ router.get(
   scheduleController.getScheduleHistoryByUserId,
 );
 
+router.get('/api/map/province', mapController.getProvinces);
+router.post('/api/map/province', mapController.createProvince);
+router.put('/api/map/province', mapController.updateProvince);
+router.delete('/api/map/province', mapController.deleteProvince);
+/**
+ * @swagger
+ * /api/map/province:
+ *   get:
+ *     summary: Get Vietnam province and it id
+ *     description: Retrieve Vietnam province and it id
+ *     tags:
+ *      - ADDRESS SECTION
+ *     responses:
+ *       '200':
+ *         description: Successfully retrieved province.
+ *       '400':
+ *         description: Bad request. Invalid parameters provided.
+ *       '500':
+ *         description: An internal server error occurred.
+ */
+
+/**
+ * @swagger
+ * /api/map/province:
+ *   post:
+ *     summary: Create a province
+ *     description: Create a privince
+ *     tags:
+ *      - ADDRESS SECTION
+ *     parameters:
+ *       - in: query
+ *         name: province
+ *         required: true
+ *         description: name of province
+ *         example: Bắc Ninh
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '200':
+ *         description: Successfully create province.
+ *       '400':
+ *         description: Bad request. Invalid parameters provided.
+ *       '500':
+ *         description: An internal server error occurred.
+ */
+
+/**
+ * @swagger
+ * /api/map/province:
+ *   put:
+ *     summary: Update a province
+ *     description: Update a privince
+ *     tags:
+ *      - ADDRESS SECTION
+ *     parameters:
+ *       - in: query
+ *         name: province_id
+ *         required: true
+ *         description: id of province
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: province
+ *         required: true
+ *         description: name of province
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '200':
+ *         description: Successfully update province.
+ *       '400':
+ *         description: Bad request. Invalid parameters provided.
+ *       '500':
+ *         description: An internal server error occurred.
+ */
+
+/**
+ * @swagger
+ * /api/map/province:
+ *   delete:
+ *     summary: Delete a province
+ *     description: Delete a privince
+ *     tags:
+ *      - ADDRESS SECTION
+ *     parameters:
+ *       - in: query
+ *         name: province_id
+ *         required: true
+ *         description: id of province
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '200':
+ *         description: Successfully update province.
+ *       '400':
+ *         description: Bad request. Invalid parameters provided.
+ *       '500':
+ *         description: An internal server error occurred.
+ */
+
+router.get('/api/map/district', mapController.getDistricts);
+router.post('/api/map/district', mapController.createDistrict);
+router.put('/api/map/district', mapController.updateDistrict);
+router.delete('/api/map/district', mapController.deleteDistrict);
+/**
+ * @swagger
+ * /api/map/district:
+ *   get:
+ *     summary: Get Vietnam district and it id
+ *     description: Retrieve Vietnam district and it id
+ *     tags:
+ *      - ADDRESS SECTION
+ *     parameters:
+ *       - in: query
+ *         name: province_id
+ *         required: false
+ *         description: id of province
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '200':
+ *         description: Successfully retrieved province.
+ *       '400':
+ *         description: Bad request. Invalid parameters provided.
+ *       '500':
+ *         description: An internal server error occurred.
+ */
+
+/**
+ * @swagger
+ * /api/map/district:
+ *   post:
+ *     summary: Create a District
+ *     description: Create Vietnam district
+ *     tags:
+ *      - ADDRESS SECTION
+ *     parameters:
+ *       - in: query
+ *         name: province_id
+ *         required: true
+ *         description: id of province
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: district
+ *         required: true
+ *         description: name of district
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '200':
+ *         description: Successfully retrieved province.
+ *       '400':
+ *         description: Bad request. Invalid parameters provided.
+ *       '500':
+ *         description: An internal server error occurred.
+ */
+
+/**
+ * @swagger
+ * /api/map/district:
+ *   put:
+ *     summary: Update a District
+ *     description: Update Vietnam district
+ *     tags:
+ *      - ADDRESS SECTION
+ *     parameters:
+ *       - in: query
+ *         name: district_id
+ *         required: true
+ *         description: id of district
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: province_id
+ *         required: true
+ *         description: id of province
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: district
+ *         required: true
+ *         description: name of district
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '200':
+ *         description: Successfully retrieved province.
+ *       '400':
+ *         description: Bad request. Invalid parameters provided.
+ *       '500':
+ *         description: An internal server error occurred.
+ */
+
+/**
+ * @swagger
+ * /api/map/district:
+ *   delete:
+ *     summary: Delete a District
+ *     description: Delete a District
+ *     tags:
+ *      - ADDRESS SECTION
+ *     parameters:
+ *       - in: query
+ *         name: district_id
+ *         required: true
+ *         description: id of district
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '200':
+ *         description: Successfully retrieved province.
+ *       '400':
+ *         description: Bad request. Invalid parameters provided.
+ *       '500':
+ *         description: An internal server error occurred.
+ */
+
+/**
+ * @swagger
+ * /api/auth/user/auth/setting-filter:
+ *   get:
+ *     security:
+ *       - BearerAuth: []
+ *     summary: SELECT USER SETTING FILTER
+ *     description: SELECT USER SETTING FILTER
+ *     tags:
+ *      - USER SETTING FILTER SECTION
+ *     responses:
+ *       '200':
+ *         description: Successfully retrieved province.
+ *       '400':
+ *         description: Bad request. Invalid parameters provided.
+ *       '500':
+ *         description: An internal server error occurred.
+ */
+router.get(
+  '/api/auth/user/auth/setting-filter',
+  userController.getUserFilterSetting,
+);
+/**
+ * @swagger
+ * /api/auth/user/auth/setting-filter:
+ *   put:
+ *     security:
+ *       - BearerAuth: []
+ *     summary: Upsert User Setting Filter
+ *     description: Upsert user setting filter
+ *     tags:
+ *       - USER SETTING FILTER SECTION
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               by_province:
+ *                 type: boolean
+ *                 description: Filter by province
+ *               province_id:
+ *                 type: string
+ *                 format: uuid
+ *                 description: Province ID for filtering
+ *               by_district:
+ *                 type: boolean
+ *                 description: Filter by district
+ *               district_id:
+ *                 type: string
+ *                 format: uuid
+ *                 description: District ID for filtering
+ *               by_age:
+ *                 type: boolean
+ *                 description: Filter by age
+ *               min_age:
+ *                 type: integer
+ *                 description: Minimum age for filtering
+ *                 example: 10
+ *               max_age:
+ *                 type: integer
+ *                 description: Maximum age for filtering
+ *                 example: 140
+ *               by_sex:
+ *                 type: boolean
+ *                 description: Filter by gender
+ *               sex_id:
+ *                 type: string
+ *                 format: uuid
+ *                 description: Gender ID for filtering
+ *     responses:
+ *       '200':
+ *         description: Successfully upserted user setting filter.
+ *       '400':
+ *         description: Bad request. Invalid parameters provided.
+ *       '500':
+ *         description: An internal server error occurred.
+ */
+router.put(
+  '/api/auth/user/auth/setting-filter',
+  userController.upsertUserFilterSetting,
+);
+
+/**
+ * @swagger
+ * /api/auth/user/auth/user-filter-setting:
+ *   get:
+ *     security:
+ *       - BearerAuth: []
+ *     summary: SELECT USER BY SETTING FILTER FOR MATCHING
+ *     description: SELECT USER BY SETTING FILTER FOR MATCHING
+ *     tags:
+ *      - USER BY SETTING FILTER FOR MATCHING SECTION
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         required: true
+ *         description: limit of user will display
+ *         schema:
+ *           type: string
+ *         example: 20
+*       - in: query
+ *         name: offset
+ *         required: true
+ *         description: number of page
+ *         schema:
+ *           type: string
+ *         example: 0
+ *     responses:
+ *       '200':
+ *         description: Successfully retrieved province.
+ *       '400':
+ *         description: Bad request. Invalid parameters provided.
+ *       '500':
+ *         description: An internal server error occurred.
+ */
+router.get(
+  '/api/auth/user/auth/user-filter-setting',
+  userController.getUserByFilterSetting,
+);
 export default router;

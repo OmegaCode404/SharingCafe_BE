@@ -33,12 +33,13 @@ export async function getAllBlogReport(page) {
                 'reporter', u.user_name,
                 'profile_avatar', u.profile_avatar ,
                 'report_status', rs.report_status,
+                'content', br.content,
                 'created_at', br.created_at 
                 ) 
             ) as user_report
         from
             blog_report br 
-        inner join report_status rs
+        full join report_status rs
         on rs.report_status_id = br.report_status_id 
         join "user" u 
         on u.user_id = br.reporter_id
@@ -59,12 +60,13 @@ export async function getAllBlogReport(page) {
   			    'reporter', u.user_name,
             'profile_avatar', u.profile_avatar ,
   			    'report_status', rs.report_status,
+            'content', br.content,
             'created_at', br.created_at 
   		    ) 
   	    ) as user_report
     from
   	  blog_report br 
-    inner join report_status rs
+    full join report_status rs
     on rs.report_status_id = br.report_status_id 
     join "user" u 
     on u.user_id = br.reporter_id
@@ -110,12 +112,13 @@ export async function getAllEventReport(page) {
           'reporter', u.user_name ,
           'profile_avatar', u.profile_avatar ,
           'report_status', rs.report_status,
+          'content', er.content,
           'created_at', er.created_at 
         ) 
       ) as user_report
     from
       event_report er 
-    inner join report_status rs 
+    full join report_status rs 
     on rs.report_status_id = er.report_status_id 
     join "user" u
     on u.user_id = er.reporter_id 
@@ -135,12 +138,13 @@ export async function getAllEventReport(page) {
           'reporter', u.user_name ,
           'profile_avatar', u.profile_avatar ,
           'report_status', rs.report_status,
+          'content', er.content,
           'created_at', er.created_at 
         ) 
       ) as user_report
     from
       event_report er 
-    inner join report_status rs 
+    full join report_status rs 
     on rs.report_status_id = er.report_status_id 
     join "user" u
     on u.user_id = er.reporter_id 
@@ -185,12 +189,13 @@ export async function getAllUserReport(page) {
           'reporter_id', ur.reporter_id ,
           'reporter', u.user_name ,
           'report_status', rs.report_status,
+          'content', ur.content,
           'created_at', ur.created_at 
         ) 
       ) as user_report
     from
       user_report ur 
-    inner join report_status rs 
+    full join report_status rs 
     on rs.report_status_id = ur.report_status_id 
     join "user" u
     on u.user_id = ur.reporter_id 
@@ -207,14 +212,15 @@ export async function getAllUserReport(page) {
         jsonb_build_object(
           'report_id', ur.report_id ,
           'reporter_id', ur.reporter_id ,
-          'reporter', u.user_name ,
+          'reporter', u.user_name,
+          'content', ur.content,
           'report_status', rs.report_status,
           'created_at', ur.created_at 
         ) 
       ) as user_report
     from
       user_report ur 
-    inner join report_status rs 
+    full join report_status rs 
     on rs.report_status_id = ur.report_status_id 
     join "user" u
     on u.user_id = ur.reporter_id 
@@ -259,12 +265,13 @@ export async function getAllReport() {
   		'reporter_id', ur.reporter_id ,
   		'reporter', u.user_name ,
   		'report_status', rs.report_status,
+      'content', ur.content,
   		'created_at', ur.created_at,
   		'is_available', u2.is_available 
   	) 
   ) as report
     from user_report ur 
-	inner join report_status rs 
+	full join report_status rs 
 	on rs.report_status_id = ur.report_status_id 
 	join "user" u
 	on u.user_id = ur.reporter_id 
@@ -281,13 +288,14 @@ export async function getAllReport() {
   			    'reporter_id', br.reporter_id ,
   			    'reporter', u.user_name,
   			    'report_status', rs.report_status,
+            'content', br.content,
   			    'created_at', br.created_at,
   			    'is_approve', b.is_approve
   		        ) 
   	        ) as report
     from
   	    blog_report br 
-    inner join report_status rs
+    full join report_status rs
     on rs.report_status_id = br.report_status_id 
     join "user" u 
     on u.user_id = br.reporter_id
@@ -304,13 +312,14 @@ export async function getAllReport() {
   			'reporter_id', er.reporter_id ,
   			'reporter', u.user_name ,
   			'report_status', rs.report_status,
+        'content', er.content,
   			'created_at', er.created_at ,
   			'is_approve', e.is_approve
   			) 
   		) as report
 	from
 		event_report er 
-	inner join report_status rs 
+	full join report_status rs 
 	on rs.report_status_id = er.report_status_id 
 	join "user" u
 	on u.user_id = er.reporter_id 

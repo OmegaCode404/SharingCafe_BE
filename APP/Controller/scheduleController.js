@@ -9,6 +9,7 @@ export async function createSchedule(req, res) {
     const result = await scheduleService.createSchedule(dataObj);
     res.status(200).send(result);
     t.commit();
+  } catch (error) {
     const userProfile = await getMiniUser(dataObj.receiver_id);
     console.log(userProfile);
     firebaseHelper.sendNotification(
@@ -16,9 +17,7 @@ export async function createSchedule(req, res) {
       'Bạn có lịch hẹn mới',
       'Vui lòng kiểm tra hộp tin nhắn',
     );
-  } catch (error) {
-    console.log(error);
-    res.status(500).send({ error: error.message });
+
     t.rollback();
   }
 }

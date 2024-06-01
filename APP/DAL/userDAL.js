@@ -3,7 +3,109 @@ import {
   User,
   UserInterest,
   SequelizeInstance,
+  UserFilterSetting,
 } from '../utility/DbHelper.js';
+
+export async function getUserFilterSetting(user_id) {
+  return await UserFilterSetting.findOne({ where: { user_id } });
+}
+export async function upsertUserFilterSetting(user_id, dataObj) {
+  const [userFilterSetting, created] = await UserFilterSetting.upsert({
+    user_id,
+    ...dataObj,
+  });
+  return { userFilterSetting, created };
+}
+
+export async function getUserByFilterSetting(user_id, limit, offset) {
+  let sqlQuery = `
+  WITH user_filter_matching AS (
+    SELECT
+      user_id,
+      by_province,
+      province_id,
+      by_district,
+      district_id,
+      by_sex,
+      sex_id,
+      by_age,
+      min_age,
+      max_age,
+      by_interest,
+      created_at
+    FROM
+      public.user_filter_setting
+    WHERE
+      user_id = '${user_id}'
+  ), user_matched AS (
+    SELECT
+      um.*,
+      ums.user_match_status
+    FROM
+      user_match um
+    INNER JOIN
+      user_match_status ums ON um.user_match_status_id = ums.user_match_status_id
+    WHERE
+      current_user_id = '${user_id}'
+  ),
+   user_liked AS (
+       SELECT um2.*,
+      ums.user_match_status FROM user_match um2 INNER JOIN
+      user_match_status ums ON um2.user_match_status_id = ums.user_match_status_id WHERE user_id_liked = '${user_id}'
+   ),
+    user_interested AS (
+    SELECT interest_id FROM user_interest WHERE user_id = '${user_id}'
+  )
+  SELECT
+    u.user_id,
+    u.user_name,
+    u.phone,
+    u.email,
+    u.profile_avatar,
+    u.story,
+    u.registration,
+    u.gender_id,
+    g.gender,
+    DATE_PART('year', AGE(current_date, u.dob)) AS age,
+    u.purpose,
+    u.favorite_location,
+    u.lat,
+    u.lng,
+    u.address,
+    u.token_id,
+    u.province_id,
+    u.district_id,
+    u.dob
+  FROM
+    public.user u
+  LEFT JOIN
+    gender g ON g.gender_id = u.gender_id
+  LEFT JOIN
+    district d ON d.district_id = u.district_id
+  LEFT JOIN
+    province p ON p.province_id = u.province_id
+  WHERE
+    u.user_id NOT IN (SELECT user_id_liked FROM user_matched)
+AND u.user_id NOT IN (SELECT current_user_id FROM user_liked)
+AND CASE WHEN (select by_province from user_filter_matching) = TRUE THEN u.province_id in (select province_id from user_filter_matching) ELSE TRUE END
+AND CASE WHEN (select by_district from user_filter_matching) = TRUE THEN u.district_id in (select district_id from user_filter_matching) ELSE TRUE END
+AND CASE WHEN (select by_sex from user_filter_matching) = TRUE THEN u.gender_id in (select sex_id from user_filter_matching) ELSE TRUE END
+AND CASE WHEN (select by_age from user_filter_matching) = TRUE THEN ((SELECT min_age FROM user_filter_matching) <= DATE_PART('year', AGE(current_date, u.dob)) AND(SELECT max_age FROM user_filter_matching) >= DATE_PART('year', AGE(current_date, u.dob))) ELSE TRUE END
+AND CASE WHEN (select by_interest from user_filter_matching) = TRUE THEN (EXISTS (SELECT 1 FROM user_interest ui WHERE ui.user_id = u.user_id AND ui.interest_id IN (SELECT interest_id FROM user_interested))) ELSE TRUE END
+AND u.user_id != '${user_id}'
+ORDER BY RANDOM()`;
+
+  if (limit && offset) {
+    sqlQuery += `
+    limit ${limit} 
+    offset ${offset}`;
+  }
+  let result = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
+  return result;
+}
 
 export async function getUserDetails(email, password) {
   let user = await User.findOne({
@@ -16,7 +118,7 @@ export async function getUserDetails(email, password) {
       'profile_avatar',
       'story',
       'registration',
-      'gender',
+      'gender_id',
       'age',
       'purpose',
       'favorite_location',
@@ -24,6 +126,9 @@ export async function getUserDetails(email, password) {
       'lng',
       'address',
       'token_id',
+      'dob',
+      'province_id',
+      'district_id',
     ],
     include: [
       {
@@ -54,10 +159,12 @@ export async function register(userId, user) {
     phone: user.phone,
     email: user.email,
     story: user.story,
-    gender: user.gender,
+    gender_id: user.gender_id,
     age: user.age,
     is_available: true,
     role_id: '6150886b-5920-4884-8e43-d4efb62f89d3',
+    province_id: user.province_id,
+    district_id: user.district_id,
   });
 }
 
@@ -132,13 +239,12 @@ export async function updateUserToken(email, token) {
   let sqlQuery = `
       UPDATE public."user" 
       SET 
-        token_id = :token
+        token_id = '${token}'
       WHERE 
-        email = :email
+        email = '${email}'
     `;
 
   let [result] = await SequelizeInstance.query(sqlQuery, {
-    replacements: { email: email, token: token },
     type: SequelizeInstance.QueryTypes.UPDATE,
   });
 
@@ -283,18 +389,20 @@ export async function getUserMatchByInterest(
         u.profile_avatar,
         u.story,
         u.registration,
-        u.gender,
-        u.age,
+        g.gender,
+        DATE_PART('year', AGE(current_date, u.dob)) AS age,
         u.purpose,
         u.favorite_location,
         u.lat,
         u.lng,
         u.address,
-        u.token_id 
+        u.token_id
     FROM 
         public."user" u
     INNER JOIN 
         user_interest ui ON ui.user_id = u.user_id
+    INNER JOIN
+        gender g ON g.gender_id = u.gender_id
     INNER JOIN 
         interest i ON i.interest_id = ui.interest_id OR ui.interest_id = i.parent_interest_id
     WHERE 
@@ -313,8 +421,8 @@ match_liked AS (
         u.profile_avatar,
         u.story,
         u.registration,
-        u.gender,
-        u.age,
+        g.gender,
+        DATE_PART('year', AGE(current_date, u.dob)) AS age,
         u.purpose,
         u.favorite_location,
         u.lat,
@@ -323,6 +431,8 @@ match_liked AS (
         u.token_id
     FROM 
         public."user" u
+    INNER JOIN
+        gender g ON g.gender_id = u.gender_id
     WHERE 
         u.user_id IN (
             SELECT current_user_id 
@@ -340,8 +450,8 @@ SELECT
         u.profile_avatar,
         u.story,
         u.registration,
-        u.gender,
-        u.age,
+        g.gender,
+        DATE_PART('year', AGE(current_date, u.dob)) AS age,
         u.purpose,
         u.favorite_location,
         u.lat,
@@ -350,6 +460,8 @@ SELECT
         u.token_id
     FROM 
         interests u
+    INNER JOIN
+        gender g ON g.gender_id = u.gender_id
     WHERE 
         u.user_id <> '${userId}'
 )
@@ -364,8 +476,8 @@ SELECT
         u.profile_avatar,
         u.story,
         u.registration,
-        u.gender,
-        u.age,
+        g.gender,
+        DATE_PART('year', AGE(current_date, u.dob)) AS age,
         u.purpose,
         u.favorite_location,
         u.lat,
@@ -374,6 +486,8 @@ SELECT
         u.token_id
     FROM 
         public."user" u
+    INNER JOIN
+        gender g ON g.gender_id = u.gender_id
     WHERE 
         u.user_id <> '${userId}'
 )
@@ -411,8 +525,8 @@ SELECT
     u.profile_avatar,
     u.story,
     u.registration,
-    u.gender,
-    u.age,
+    g.gender,
+    DATE_PART('year', AGE(current_date, u.dob)) AS age,
     u.purpose,
     u.favorite_location,
     u.lat,
@@ -421,6 +535,8 @@ SELECT
     u.token_id
 FROM 
     match_liked u
+INNER JOIN
+    gender g ON g.gender_id = u.gender_id
 WHERE 
     u.user_id <> '${userId}'
     UNION 
@@ -437,11 +553,6 @@ and t.age = '${filterByAge}'
   filterByGender
     ? (sqlQuery += `
 and t.gender = '${filterByGender}'
-`)
-    : '';
-  filterByAddress
-    ? (sqlQuery += `
-and t.address = '${filterByAddress}'
 `)
     : '';
 
@@ -464,12 +575,27 @@ INNER JOIN
 INNER JOIN 
     user_match_status ums ON um.user_match_status_id = ums.user_match_status_id 
 WHERE 
-    (um.current_user_id = '${userId}' OR um.user_id_liked = '${userId}')
+    (um.user_id_liked = '${userId}' or um.current_user_id = '${userId}')
     AND ums.user_match_status_id IS NOT null
     and u.user_id <> '${userId}'
   `;
 
-  if (status) {
+  if (status == 'Pending') {
+    sqlQuery = ` 
+    SELECT 
+    *
+FROM 
+    public.user u
+INNER JOIN 
+    user_match um ON um.user_id_liked = u.user_id OR um.current_user_id = u.user_id 
+INNER JOIN 
+    user_match_status ums ON um.user_match_status_id = ums.user_match_status_id 
+WHERE 
+    um.user_id_liked = '${userId}'
+    AND ums.user_match_status_id IS NOT null
+    and u.user_id <> '${userId}'
+    AND ums.user_match_status = '${status}'`;
+  } else if (status == 'Matched') {
     sqlQuery += ` AND ums.user_match_status = '${status}'`;
   }
   let userDetails = await SequelizeInstance.query(sqlQuery, {
@@ -522,18 +648,20 @@ WITH interests AS (
         u.profile_avatar,
         u.story,
         u.registration,
-        u.gender,
-        u.age,
+        g.gender,
+        DATE_PART('year', AGE(current_date, u.dob)) AS age,
         u.purpose,
         u.favorite_location,
         u.lat,
         u.lng,
         u.address,
-        u.token_id 
+        u.token_id
     FROM 
         public."user" u
     INNER JOIN 
         user_interest ui ON ui.user_id = u.user_id
+    LEFT JOIN
+        gender g ON g.gender_id = u.gender_id
     INNER JOIN 
         interest i ON i.interest_id = ui.interest_id OR ui.interest_id = i.parent_interest_id
     WHERE 
@@ -552,8 +680,8 @@ match_liked AS (
         u.profile_avatar,
         u.story,
         u.registration,
-        u.gender,
-        u.age,
+        g.gender,
+        DATE_PART('year', AGE(current_date, u.dob)) AS age,
         u.purpose,
         u.favorite_location,
         u.lat,
@@ -562,6 +690,8 @@ match_liked AS (
         u.token_id
     FROM 
         public."user" u
+    LEFT JOIN
+        gender g ON g.gender_id = u.gender_id
     WHERE 
         u.user_id IN (
             SELECT current_user_id 
@@ -579,8 +709,8 @@ SELECT
         u.profile_avatar,
         u.story,
         u.registration,
-        u.gender,
-        u.age,
+        g.gender,
+        DATE_PART('year', AGE(current_date, u.dob)) AS age,
         u.purpose,
         u.favorite_location,
         u.lat,
@@ -589,6 +719,8 @@ SELECT
         u.token_id
     FROM 
         interests u
+    LEFT JOIN
+        gender g ON g.gender_id = u.gender_id        
     WHERE 
         u.user_id <> '${userId}'
 )
@@ -603,8 +735,8 @@ SELECT
         u.profile_avatar,
         u.story,
         u.registration,
-        u.gender,
-        u.age,
+        g.gender,
+        DATE_PART('year', AGE(current_date, u.dob)) AS age,
         u.purpose,
         u.favorite_location,
         u.lat,
@@ -613,6 +745,8 @@ SELECT
         u.token_id
     FROM 
         public."user" u
+    LEFT JOIN
+        gender g ON g.gender_id = u.gender_id
     WHERE 
         u.user_id <> '${userId}'
 )
@@ -650,8 +784,8 @@ u.user_id NOT IN (
     u.profile_avatar,
     u.story,
     u.registration,
-    u.gender,
-    u.age,
+    g.gender,
+    DATE_PART('year', AGE(current_date, u.dob)) AS age,
     u.purpose,
     u.favorite_location,
     u.lat,
@@ -660,6 +794,7 @@ u.user_id NOT IN (
     u.token_id
   from 
     public.user u
+  left join gender g on g.gender_id = u.gender_id
   where 1 = 1
   and u.user_id <> '${userId}'
   and u.age in (select age from "user" u2 where u2.user_id = '${userId}')
@@ -676,8 +811,8 @@ SELECT
     u.profile_avatar,
     u.story,
     u.registration,
-    u.gender,
-    u.age,
+    g.gender,
+    DATE_PART('year', AGE(current_date, u.dob)) AS age,
     u.purpose,
     u.favorite_location,
     u.lat,
@@ -686,6 +821,7 @@ SELECT
     u.token_id
 FROM 
     match_liked u
+LEFT JOIN gender g on g.gender_id = u.gender_id
 WHERE 
     u.user_id <> '${userId}'
     and u.user_id not in (select blocker_id from user_block ub where blocked_id = '${userId}')
@@ -710,11 +846,6 @@ and df.age = '${filterByAge}'
   filterByGender
     ? (sqlQuery += `
 and df.gender = '${filterByGender}'
-`)
-    : '';
-  filterByAddress
-    ? (sqlQuery += `
-and df.address = '${filterByAddress}'
 `)
     : '';
 
@@ -830,7 +961,7 @@ export async function updateProfile(userId, profile) {
       story: profile.story,
       password: profile.password,
       profile_avatar: profile.profile_avatar,
-      gender: profile.gender,
+      gender_id: profile.gender_id,
       age: profile.age,
       purpose: profile.purpose,
       favorite_location: profile.favorite_location,
@@ -838,6 +969,9 @@ export async function updateProfile(userId, profile) {
       lng: profile.lng,
       address: profile.address,
       token_id: profile.token_id,
+      dob: new Date(new Date(profile.dob).getTime() + 7 * 60 * 60 * 1000),
+      province_id: profile.province_id,
+      district_id: profile.district_id,
     },
     {
       where: { user_id: userId },
@@ -870,10 +1004,9 @@ export async function deleteUserInterests(userId) {
 export async function upsertInterests(data) {
   let sqlQuery = `
   INSERT INTO public.user_interest (user_interest_id, interest_id, user_id, created_at) 
-  VALUES(gen_random_uuid(), :interest_id, :user_id, now())
+  VALUES(gen_random_uuid(), '${data.interest_id}', '${data.user_id}', now())
   `;
   let result = await SequelizeInstance.query(sqlQuery, {
-    replacements: data,
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
   });
@@ -895,10 +1028,9 @@ export async function deleteUnlikeTopics(userId) {
 export async function upsertUnlikeTopics(data) {
   let sqlQuery = `
   INSERT INTO public.unlike_topic (unlike_topic_id, user_id, topic, created_at) 
-  VALUES(gen_random_uuid(), :user_id, :topic, now());
+  VALUES(gen_random_uuid(), '${data.user_id}', '${data.topic}', now());
   `;
   let result = await SequelizeInstance.query(sqlQuery, {
-    replacements: data,
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
   });
@@ -921,10 +1053,9 @@ export async function deletePersonalProblems(userId) {
 export async function upsertPersonalProblems(data) {
   let sqlQuery = `
   INSERT INTO public.personal_problem (personal_problem_id, user_id, problem, created_at) 
-  VALUES(gen_random_uuid(), :user_id, :problem, now());
+  VALUES(gen_random_uuid(), '${data.user_id}', '${data.problem}', now());
   `;
   let result = await SequelizeInstance.query(sqlQuery, {
-    replacements: data,
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
   });
@@ -946,10 +1077,9 @@ export async function deleteFavoriteDrinks(userId) {
 export async function upsertFavoriteDrinks(data) {
   let sqlQuery = `
   INSERT INTO public.favorite_drink (favorite_drink_id, user_id, favorite_drink, created_at) 
-  VALUES(gen_random_uuid(), :user_id, :favorite_drink, now());
+  VALUES(gen_random_uuid(), '${data.user_id}', '${data.favorite_drink}', now());
   `;
   let result = await SequelizeInstance.query(sqlQuery, {
-    replacements: data,
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
   });
@@ -971,10 +1101,9 @@ export async function deleteFreeTimes(userId) {
 export async function upsertFreeTimes(data) {
   let sqlQuery = `
   INSERT INTO public.free_time (free_time_id, user_id, free_time, created_at) 
-  VALUES(gen_random_uuid(), :user_id, :free_time, now());
+  VALUES(gen_random_uuid(), '${data.user_id}', '${data.free_time}', now());
   `;
   let result = await SequelizeInstance.query(sqlQuery, {
-    replacements: data,
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
   });
@@ -1016,7 +1145,8 @@ export async function updateLocation(userId, lat, lng) {
 export async function getProfile(userId) {
   let sqlQuery = `
   select 
-    u.user_id, u.user_name, u.profile_avatar, u.story, u.gender, u.age, u.purpose, u.favorite_location, u.address,
+    u.user_id, u.user_name, u.profile_avatar, u.story, u.gender_id, g.gender, u.age, u.purpose, u.favorite_location, u.address, u.dob, u.province_id, p.province, u.district_id, d.district,
+    (select  avg(rating)::numeric(2, 1) from rating r  where r.user_id_rated = '${userId}') as avg_rating ,
     i.interest_id ,
     i."name" as interest_name,
     pp.personal_problem_id,
@@ -1028,12 +1158,15 @@ export async function getProfile(userId) {
     ft.free_time_id,
     ft.free_time 
     from public."user" u
+    left join public.gender g on g.gender_id = u.gender_id
     left join public.user_interest ui on u.user_id = ui.user_id
     left join public.interest i on i.interest_id = ui.interest_id 
     left join public.personal_problem pp on pp.user_id = u.user_id 
     left join public.unlike_topic ut on ut.user_id = u.user_id 
     left join public.favorite_drink fd on fd.user_id = u.user_id
     left join public.free_time ft on ft.user_id = u.user_id 
+    left join public.province p on p.province_id = u.province_id
+    left join public.district d on d.district_id = u.district_id
     where u.user_id = '${userId}'
     `;
   let result = await SequelizeInstance.query(sqlQuery, {
@@ -1063,10 +1196,9 @@ export async function getUserBlockedByUser(userId) {
 from "user" u 
 inner join user_block ub 
 on blocked_id = u.user_id 
-and ub.blocker_id = :userId
+and ub.blocker_id = '${userId}'
   `;
   let result = await SequelizeInstance.query(sqlQuery, {
-    replacements: { userId },
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
   });
@@ -1076,11 +1208,10 @@ and ub.blocker_id = :userId
 export async function blockingAUser(userId, blockedId) {
   let sqlQuery = `
   INSERT INTO public.user_block (blocker_id, blocked_id, created_at)
-VALUES (:userId, :blockedId, now())
+VALUES ('${userId}', '${blockedId}', now())
 ON CONFLICT (blocker_id, blocked_id) DO NOTHING;
   `;
   let result = await SequelizeInstance.query(sqlQuery, {
-    replacements: { userId, blockedId },
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
   });
@@ -1089,10 +1220,9 @@ ON CONFLICT (blocker_id, blocked_id) DO NOTHING;
 export async function unBlockingAUser(userId, blockedId) {
   let sqlQuery = `
     DELETE FROM public.user_block 
-    WHERE blocker_id = :userId AND blocked_id = :blockedId
+    WHERE blocker_id = '${userId}' AND blocked_id = '${blockedId}'
   `;
   let result = await SequelizeInstance.query(sqlQuery, {
-    replacements: { userId, blockedId },
     type: SequelizeInstance.QueryTypes.DELETE, // Changed QueryTypes.SELECT to QueryTypes.DELETE
     raw: true,
   });
@@ -1107,7 +1237,18 @@ export async function getBlockCouple(messageData) {
           OR (blocker_id = '${to}' AND blocked_id = '${from}')
     `;
   let result = await SequelizeInstance.query(sqlQuery, {
-    type: SequelizeInstance.QueryTypes.INSERT,
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
+  return result;
+}
+
+export async function getGender() {
+  let sqlQuery = `
+  select * from gender
+  `;
+  let result = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
   });
   return result;

@@ -24,26 +24,21 @@ export async function upsertMatch(
   if (upsertOnly)
     sqlQuery = `
     INSERT INTO public.user_match (user_match_id, current_user_id, user_id_liked, user_match_status_id, created_at) 
-    VALUES (:user_match_id, :current_user_id, :user_id_liked, :user_match_status_id, NOW())
+    VALUES ('${matchId}', '${userId}', '${userId2}', '${statusId}', NOW())
     ON CONFLICT (user_match_id)
     DO UPDATE SET 
-        user_match_status_id = :user_match_status_id, 
+        user_match_status_id = '${statusId}', 
         created_at = NOW()
     RETURNING *;
   `;
   else
-    sqlQuery = `UPDATE public.user_match 
-                   SET user_match_status_id=:user_match_status_id
-                   , created_at=now() 
-                   WHERE user_match_id=:user_match_id`;
+    sqlQuery = `
+  UPDATE public.user_match 
+  SET user_match_status_id = '${statusId}'
+  , created_at=now() 
+  WHERE user_match_id = '${matchId}'`;
 
   const result = await SequelizeInstance.query(sqlQuery, {
-    replacements: {
-      user_match_id: matchId,
-      current_user_id: userId,
-      user_id_liked: userId2,
-      user_match_status_id: statusId,
-    },
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
   });
@@ -63,12 +58,11 @@ export async function getMatchCouple(userId, userId2) {
       inner join user_match_status ums 
         on ums.user_match_status_id  = um.user_match_status_id 
     WHERE 
-      (current_user_id = :userId AND user_id_liked = :userId2)
-      OR (current_user_id = :userId2 AND user_id_liked = :userId)
+      (current_user_id = '${userId}' AND user_id_liked = '${userId2}')
+      OR (current_user_id = '${userId2}' AND user_id_liked = '${userId}')
   `;
 
   const result = await SequelizeInstance.query(sqlQuery, {
-    replacements: { userId, userId2 },
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
   });

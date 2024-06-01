@@ -5,10 +5,29 @@ export async function createSchedule(schedule_id, dataObj) {
     schedule_id: schedule_id,
     content: dataObj.content,
     location: dataObj.location,
-    schedule_time: dataObj.date,
+    schedule_time: new Date(dataObj.date),
     sender_id: dataObj.sender_id,
     receiver_id: dataObj.receiver_id,
   });
+}
+
+export async function checkSchedule(dataObj) {
+  const timeOffInSeconds = 5400;
+  const sqlQuery = `
+  WITH pending_schedule AS (
+    SELECT *
+    FROM schedule
+    WHERE
+        (sender_id = '${dataObj.sender_id}' OR receiver_id = '${dataObj.sender_id}')
+    AND is_accept != false OR is_accept IS NULL
+  )
+      SELECT 1 FROM pending_schedule WHERE ABS(EXTRACT(EPOCH FROM (schedule_time - '${dataObj.date}'))) < ${timeOffInSeconds};
+  `;
+  const result = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
+  return result.length == 0;
 }
 
 export async function getScheduleBetweenUsers(userId, anotherUserId) {
@@ -69,7 +88,7 @@ export async function getScheduleHistoryByUserId(userId) {
   u3.profile_avatar as receiver_avatar,
   s.is_accept,
   s.created_at,
-  jsonb_agg(
+  coalesce(jsonb_agg(
       jsonb_build_object(
       'rating_id', r.rating_id ,
       'user_id', u.user_id ,
@@ -77,7 +96,7 @@ export async function getScheduleHistoryByUserId(userId) {
       'content', r."content"  ,
       'rating', r.rating
       ) 
-    ) as rating
+    ) FILTER (WHERE r.rating_id IS NOT NULL), '[]') as rating
   FROM
     schedule s
   LEFT JOIN
@@ -125,7 +144,8 @@ SELECT
     u.token_id as user_from_token,
     u2.user_name as user_to,
     u2.token_id as user_token_token,
-    'The schedule ' || s.content || ' occurring at ' || s.schedule_time || ' has been updated as ' || now()  as message
+    'The schedule ' || s.content || ' occurring at ' || s.schedule_time || ' has been updated as ' || now()  as message,
+    s.content
 FROM
     public.schedule s
 inner join public.user u
@@ -175,6 +195,7 @@ export async function createRating(rating_id, loginUser, dataObj) {
     content: dataObj.content,
     rating_id: rating_id,
     user_id: loginUser,
+    user_id_rated: dataObj.user_id_rated,
     rating: dataObj.rating,
   });
 }
@@ -230,15 +251,13 @@ export async function canceledSchedule(userId, blockedId) {
     UPDATE public.schedule
     SET is_accept = false
     WHERE 
-      ((sender_id = :userId AND receiver_id = :blockedId) OR (sender_id = :blockedId AND receiver_id = :userId))
+      ((sender_id = '${userId}' AND receiver_id = '${blockedId}') OR (sender_id = '${blockedId}' AND receiver_id = '${userId}'))
       AND schedule_time >= NOW();
   `;
 
   const userDetails = await SequelizeInstance.query(sqlQuery, {
-    replacements: { userId, blockedId },
     type: SequelizeInstance.QueryTypes.UPDATE,
     raw: true,
   });
-
   return userDetails;
 }

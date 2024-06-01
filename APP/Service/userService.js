@@ -46,11 +46,18 @@ export async function getUser(userId) {
     user_name: '',
     profile_avatar: '',
     story: '',
+    gender_id: '',
     gender: '',
     age: '',
     purpose: '',
     favorite_location: '',
     address: '',
+    dob: '',
+    province_id: '',
+    province: '',
+    district_id: '',
+    district: '',
+    avg_rating: '',
     interest: [],
     problem: [],
     unlike_topic: [],
@@ -65,11 +72,18 @@ export async function getUser(userId) {
         user_name: row.user_name,
         profile_avatar: row.profile_avatar,
         story: row.story,
+        gender_id: row.gender_id,
         gender: row.gender,
         age: row.age,
         purpose: row.purpose,
         favorite_location: row.favorite_location,
         address: row.address,
+        dob: row.dob,
+        province_id: row.province_id,
+        province: row.province,
+        district_id: row.district_id,
+        district: row.district,
+        avg_rating: row.avg_rating,
       };
     }
 
@@ -340,11 +354,8 @@ export async function updateUserMatchStatus(userId, dataObj) {
     statusStage.user_match_status_id,
     upsertOnly,
   );
-  // const title = `MATCHING FEATURE`;
-  // const bodyCurrent = `MATCHING STATUS : ${statusStage.user_match_status} with ${userLiked.user_name}`;
-  // const bodyLike = `MATCHING STATUS : ${statusStage.user_match_status} by ${userCurrent.user_name}`;
 
-  const title = `Kết nối`;
+  const title = `TÍNH NĂNG KẾT NỐI`;
   const bodyCurrent = `Bạn ${commonFunctions.getValueByLabel(
     statusStage.user_match_status,
   )} với ${userLiked.user_name}`;
@@ -404,7 +415,7 @@ export async function getDistance(
 export async function getProfile(userId, currentUserId) {
   var currentUserLocation = await userDAL.getLocationByUserId(currentUserId);
   var userLocation = await userDAL.getLocationByUserId(userId);
-  var distance = await getDistance(
+  var distance = await commonFunctions.calculateDistance(
     userLocation.lat,
     userLocation.lng,
     currentUserLocation.lat,
@@ -421,6 +432,10 @@ export async function getProfile(userId, currentUserId) {
     purpose: '',
     favorite_location: '',
     address: '',
+    dob: '',
+    province: '',
+    district: '',
+    avg_rating: '',
     distance: distance,
     interest: [],
     problem: [],
@@ -441,6 +456,10 @@ export async function getProfile(userId, currentUserId) {
         purpose: row.purpose,
         favorite_location: row.favorite_location,
         address: row.address,
+        dob: row.dob,
+        province: row.province,
+        district: row.district,
+        avg_rating: row.avg_rating,
       };
     }
 
@@ -519,8 +538,8 @@ export async function getUserBlockedByUser(userId) {
   return await userDAL.getUserBlockedByUser(userId);
 }
 export async function blockingAUser(userId, blockedId) {
-  const [userCurrent] = await userDAL.getUserInfoById(userId);
-  const [userLiked] = await userDAL.getUserInfoById(blockedId);
+  // const [userCurrent] = await userDAL.getUserInfoById(userId);
+  // const [userLiked] = await userDAL.getUserInfoById(blockedId);
   const status = await matchDAL.getMatchStatus();
   const [match] = await matchDAL.getMatchCouple(userId, blockedId);
   console.log(match);
@@ -545,4 +564,19 @@ export async function blockingAUser(userId, blockedId) {
 
 export async function unBlockingAUser(userId, blockedId) {
   return await userDAL.unBlockingAUser(userId, blockedId);
+}
+
+export async function getUserFilterSetting(userId) {
+  return await userDAL.getUserFilterSetting(userId);
+}
+
+export async function upsertUserFilterSetting(userId, dataObj) {
+  await userDAL.upsertUserFilterSetting(userId, dataObj);
+}
+export async function getUserByFilterSetting(userId, limit, offset) {
+  return await userDAL.getUserByFilterSetting(userId, limit, offset);
+}
+
+export async function getGender() {
+  return await userDAL.getGender();
 }

@@ -69,8 +69,8 @@ const User = sequelize.define(
     role_id: {
       type: DataTypes.UUID,
     },
-    gender: {
-      type: DataTypes.BOOLEAN,
+    gender_id: {
+      type: DataTypes.UUID,
     },
     age: {
       type: DataTypes.TEXT,
@@ -89,6 +89,15 @@ const User = sequelize.define(
     },
     is_available: {
       type: DataTypes.BOOLEAN,
+    },
+    dob: {
+      type: DataTypes.DATE,
+    },
+    province_id: {
+      type: DataTypes.UUID,
+    },
+    district_id: {
+      type: DataTypes.UUID,
     },
   },
   {
@@ -124,7 +133,7 @@ const PersonalProblem = sequelize.define(
 const UnlikeTopic = sequelize.define(
   'UnlikeTopic',
   {
-    personal_problem_id: {
+    unlike_topic_id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
@@ -172,7 +181,7 @@ const FavoriteDrink = sequelize.define(
 const FreeTime = sequelize.define(
   'FreeTime',
   {
-    personal_problem_id: {
+    free_time_id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
@@ -180,7 +189,7 @@ const FreeTime = sequelize.define(
     user_id: {
       type: DataTypes.UUID,
     },
-    topic: {
+    free_time: {
       type: DataTypes.TEXT,
     },
     created_at: {
@@ -259,6 +268,79 @@ const Notification = sequelize.define(
   {
     tableName: 'notification',
     timestamps: false,
+  },
+);
+
+export const UserFilterSetting = sequelize.define(
+  'UserFilterSetting',
+  {
+    user_id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+      allowNull: false,
+    },
+    by_province: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      allowNull: true,
+    },
+    province_id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      allowNull: true,
+    },
+    by_district: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      allowNull: true,
+    },
+    district_id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      allowNull: true,
+    },
+    by_age: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+      allowNull: true,
+    },
+    min_age: {
+      type: DataTypes.SMALLINT,
+      defaultValue: 0,
+      allowNull: true,
+    },
+    max_age: {
+      type: DataTypes.SMALLINT,
+      defaultValue: 100,
+      allowNull: true,
+    },
+    by_sex: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+      allowNull: true,
+    },
+    sex_id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      allowNull: true,
+    },
+    by_interest: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+      allowNull: true,
+    },
+    created_at: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+      allowNull: false,
+    },
+  },
+  {
+    tableName: 'user_filter_setting',
+    schema: 'public',
+    timestamps: false,
+    comment: 'This user_filter_setting describe user setting for filtering',
   },
 );
 
@@ -796,8 +878,9 @@ const Province = sequelize.define(
   'province',
   {
     province_id: {
-      type: DataTypes.TEXT,
+      type: DataTypes.UUID,
       primaryKey: true,
+      defaultValue: DataTypes.UUIDV4,
     },
     province: {
       type: DataTypes.TEXT,
@@ -806,6 +889,28 @@ const Province = sequelize.define(
   },
   {
     tableName: 'province',
+    timestamps: false,
+  },
+);
+
+const District = sequelize.define(
+  'district',
+  {
+    district_id: {
+      type: DataTypes.UUID,
+      primaryKey: true,
+      defaultValue: DataTypes.UUIDV4,
+    },
+    province_id: {
+      type: DataTypes.UUID,
+    },
+    district: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+    },
+  },
+  {
+    tableName: 'district',
     timestamps: false,
   },
 );
@@ -826,6 +931,10 @@ const Rating = sequelize.define(
       type: DataTypes.UUID,
       allowNull: false,
     },
+    user_id_rated: {
+      type: DataTypes.UUID,
+      allowNull: false,
+    },
     rating: {
       type: DataTypes.TEXT,
       allowNull: false,
@@ -840,6 +949,27 @@ const Rating = sequelize.define(
   },
   {
     tableName: 'rating',
+    timestamps: false,
+  },
+);
+
+const Gender = sequelize.define(
+  'gender',
+  {
+    gender_id: {
+      type: DataTypes.UUID,
+      primaryKey: true,
+      defaultValue: DataTypes.UUIDV4,
+    },
+    gender: {
+      type: DataTypes.TEXT,
+    },
+    is_ignore: {
+      type: DataTypes.BOOLEAN,
+    },
+  },
+  {
+    tableName: 'gender',
     timestamps: false,
   },
 );
@@ -922,5 +1052,7 @@ export {
   FavoriteDrink,
   UserReport,
   Province,
+  District,
   Rating,
+  Gender,
 };
