@@ -240,7 +240,9 @@ export async function updateUserToken(email, token) {
       UPDATE public."user" 
       SET 
         token_id = '${token}'
+        token_id = '${token}'
       WHERE 
+        email = '${email}'
         email = '${email}'
     `;
 

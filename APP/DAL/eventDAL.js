@@ -3,6 +3,11 @@ import {
   SequelizeInstance,
   EventParticipation,
 } from '../utility/DbHelper.js';
+import {
+  Event,
+  SequelizeInstance,
+  EventParticipation,
+} from '../utility/DbHelper.js';
 
 export async function getEvents(title, date, page) {
   let sqlQuery = '';
@@ -12,6 +17,7 @@ export async function getEvents(title, date, page) {
   }
   let date1 = new Date(date);
   if (date1 == 'Invalid Date') {
+    date1 = new Date('1/1/1000');
     date1 = new Date('1/1/1000');
   }
   if (page) {
