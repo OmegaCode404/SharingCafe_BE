@@ -1,4 +1,10 @@
-import { Role, SequelizeInstance, User, Blog, Event } from '../utility/DbHelper.js';
+import {
+  Role,
+  SequelizeInstance,
+  User,
+  Blog,
+  Event,
+} from '../utility/DbHelper.js'
 
 export async function getAdmDetails(email, password) {
   const user = await User.findOne({
@@ -35,9 +41,9 @@ export async function getAdmDetails(email, password) {
       password: password,
     },
     limit: 1,
-  });
-  console.log(user.dataValues);
-  return user;
+  })
+  console.log(user.dataValues)
+  return user
 }
 export async function getStatics() {
   const sqlQuery = `
@@ -63,16 +69,17 @@ export async function getStatics() {
     UNION
   SELECT 'Schedule' AS entity_type, COUNT(*) AS entity_count
   FROM schedule
-    `;
+    `
   const statics = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return statics;
+  })
+  return statics
 }
-export async function getUsers() {
+export async function getUsers({ page, size }) {
   const sqlQuery = `
   SELECT 
+    u.user_id,
     u.user_name,
     u.phone,
     u.email,
@@ -120,17 +127,20 @@ export async function getUsers() {
       u.user_id, u.role_id, g.gender, d.district, p.province
   ORDER BY
       u.registration desc
-  `;
+  ${page && size ? ` limit ${page}, ${(page - 1) * size}` : ''}
+  `
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function getUser(userId) {
-  const result = await User.findByPk(userId);
-  return result;
+  const result = await User.findByPk(userId, {
+    attributes: { exclude: ['password'] },
+  })
+  return result
 }
 
 export async function updateUserStatus(userId, userDetails) {
@@ -140,8 +150,8 @@ export async function updateUserStatus(userId, userDetails) {
     },
     {
       where: { user_id: userId },
-    },
-  );
+    }
+  )
 }
 
 export async function updateBlogStatus(blogId, blogDetails) {
@@ -151,8 +161,8 @@ export async function updateBlogStatus(blogId, blogDetails) {
     },
     {
       where: { blog_id: blogId },
-    },
-  );
+    }
+  )
 }
 
 export async function updateEventStatus(eventId, eventDetails) {
@@ -162,8 +172,8 @@ export async function updateEventStatus(eventId, eventDetails) {
     },
     {
       where: { event_id: eventId },
-    },
-  );
+    }
+  )
 }
 
 export async function getEventStatics() {
@@ -178,12 +188,12 @@ GROUP BY
   event_year, event_month
 ORDER BY 
   event_year, event_month;
-    `;
+    `
   const statics = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return statics;
+  })
+  return statics
 }
 
 export async function getScheduleList() {
@@ -221,12 +231,12 @@ export async function getScheduleList() {
     on r.user_id = u3.user_id
   group by s.schedule_id, u.user_name, u2.user_name
   order by s.created_at desc
-    `;
+    `
   const list = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return list;
+  })
+  return list
 }
 
 export async function getBlogStatics() {
@@ -241,10 +251,10 @@ GROUP BY
   blog_year, blog_month
 ORDER BY 
   blog_year, blog_month;
-    `;
+    `
   const statics = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return statics;
+  })
+  return statics
 }

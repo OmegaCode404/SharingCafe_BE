@@ -1,5 +1,3 @@
-import swaggerJSDoc from 'swagger-jsdoc';
-
 const options = {
   definition: {
     openapi: '3.0.0',
@@ -26,7 +24,7 @@ const options = {
       description: 'This is the local development environment',
     },
     {
-      url: '',
+      url: 'https://sharing-coffee-be-capstone-com.onrender.com',
       description: 'This is the cloud development environment',
     },
   ],

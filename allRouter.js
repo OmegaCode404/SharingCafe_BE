@@ -1,19 +1,24 @@
-import express from 'express';
-import * as admController from './APP/Controller/adminController.js';
-import * as userController from './APP/Controller/userController.js';
-import * as interestController from './APP/Controller/interestController.js';
-import * as eventController from './APP/Controller/EventController.js';
-import * as blogController from './APP/Controller/blogController.js';
-import * as matchController from './APP/Controller/matchController.js';
-import * as modController from './APP/Controller/modController.js';
-import uploadCloud from './APP/middleware/uploadCloudImg.js';
-import * as chatController from './APP/Controller/chatController.js';
-import * as scheduleController from './APP/Controller/scheduleController.js';
-import * as reportController from './APP/Controller/reportController.js';
-import * as locationController from './APP/Controller/locationController.js';
-import * as notificationController from './APP/Controller/NotificationController.js';
-import * as mapController from './APP/Controller/mapController.js';
-const router = express.Router();
+import express from 'express'
+import * as admController from './APP/Controller/adminController.js'
+import * as userController from './APP/Controller/userController.js'
+import * as interestController from './APP/Controller/interestController.js'
+import * as eventController from './APP/Controller/EventController.js'
+import * as blogController from './APP/Controller/blogController.js'
+import * as matchController from './APP/Controller/matchController.js'
+import * as modController from './APP/Controller/modController.js'
+import uploadCloud from './APP/middleware/uploadCloudImg.js'
+import * as chatController from './APP/Controller/chatController.js'
+import * as scheduleController from './APP/Controller/scheduleController.js'
+import * as reportController from './APP/Controller/reportController.js'
+import * as locationController from './APP/Controller/locationController.js'
+import * as notificationController from './APP/Controller/NotificationController.js'
+import * as mapController from './APP/Controller/mapController.js'
+import * as imageController from './APP/Controller/imageController.js'
+import * as discussController from './APP/Controller/discussController.js'
+import { validate } from 'express-validation'
+import * as imageValidation from './APP/validation/image.js'
+import Router from 'express'
+const router = Router()
 
 /**
  * @swagger
@@ -165,11 +170,11 @@ const router = express.Router();
  *       500:
  *         description: Internal server error
  */
-router.post('/api/admin/login', admController.loginAdmin);
-router.get('/api/admin/statics', admController.getStatics);
-router.get('/api/admin/event-statics', admController.getEventStatics);
-router.get('/api/admin/schedule-list', admController.getScheduleList);
-router.get('/api/admin/blog-statics', admController.getBlogStatics);
+router.post('/api/admin/login', admController.loginAdmin)
+router.get('/api/admin/statics', admController.getStatics)
+router.get('/api/admin/event-statics', admController.getEventStatics)
+router.get('/api/admin/schedule-list', admController.getScheduleList)
+router.get('/api/admin/blog-statics', admController.getBlogStatics)
 /**
  * @swagger
  * /api/user/register:
@@ -233,7 +238,7 @@ router.get('/api/admin/blog-statics', admController.getBlogStatics);
  *                 example: User@123
  *               token:
  *                 type: string
- *                 example: Iphone 15 promax
+ *                 example: Iphone 15 Pro Max
  *     responses:
  *       '200':
  *         description: Successful login
@@ -517,7 +522,7 @@ router.get('/api/admin/blog-statics', admController.getBlogStatics);
  *                  description: Id of province to be updated
  *               district_id:
  *                  type: string
- *                  description: Id of disctrict to be updated
+ *                  description: Id of district to be updated
  *     responses:
  *       '200':
  *         description: User updated successfully
@@ -849,54 +854,51 @@ router.get('/api/admin/blog-statics', admController.getBlogStatics);
  *       '500':
  *         description: An internal server error occurred.
  */
-router.put('/api/auth/user/update-interests', userController.upsertInterests);
+router.put('/api/auth/user/update-interests', userController.upsertInterests)
 router.put(
   '/api/auth/user/update-unlike-topic',
-  userController.upsertUnlikeTopics,
-);
+  userController.upsertUnlikeTopics
+)
 router.put(
   '/api/auth/user/update-personal-problem',
-  userController.upsertPersonalProblems,
-);
+  userController.upsertPersonalProblems
+)
 router.put(
   '/api/auth/user/update-favorite-drink',
-  userController.upsertFavoriteDrinks,
-);
-router.put('/api/auth/user/update-free-time', userController.upsertFreeTimes);
+  userController.upsertFavoriteDrinks
+)
+router.put('/api/auth/user/update-free-time', userController.upsertFreeTimes)
 
-router.get('/api/user/token/:userId', userController.getTokenId);
+router.get('/api/user/token/:userId', userController.getTokenId)
 
-router.post('/api/user/login', userController.loginUser);
-router.get('/api/auth/user/profile', userController.getUser);
-router.put('/api/auth/user/profile', userController.updateProfile);
+router.post('/api/user/login', userController.loginUser)
+router.get('/api/auth/user/profile', userController.getUser)
+router.put('/api/auth/user/profile', userController.updateProfile)
 router.put(
   '/api/user/avatar/:userId',
   uploadCloud.single('profile_avatar'),
-  userController.updateAvatar,
-);
-router.post('/api/user/interest', userController.createInterest);
-router.get('/api/user/interests/:userId', userController.getInterests);
-router.get('/api/user/interest/:userInterestId', userController.getInterest);
-router.put('/api/user/interest/:userInterestId', userController.updateInterest);
-router.delete('/api/user/interest', userController.deleteInterest);
-router.post('/api/user/register', userController.register);
+  userController.updateAvatar
+)
+router.post('/api/user/interest', userController.createInterest)
+router.get('/api/user/interests/:userId', userController.getInterests)
+router.get('/api/user/interest/:userInterestId', userController.getInterest)
+router.put('/api/user/interest/:userInterestId', userController.updateInterest)
+router.delete('/api/user/interest', userController.deleteInterest)
+router.post('/api/user/register', userController.register)
 router.get(
   '/api/user/confirmVerificationEmail',
-  userController.confirmVerificationEmail,
-);
+  userController.confirmVerificationEmail
+)
 
-router.get('/api/user/gender', userController.getGender);
+router.get('/api/user/gender', userController.getGender)
 
-router.post('/api/auth/user/block/block-user', userController.blockingAUser);
-router.delete(
-  '/api/auth/user/block/block-user',
-  userController.unBlockingAUser,
-);
+router.post('/api/auth/user/block/block-user', userController.blockingAUser)
+router.delete('/api/auth/user/block/block-user', userController.unBlockingAUser)
 
 router.get(
   '/api/auth/user/block/check-blocked',
-  userController.getUserBlockedByUser,
-);
+  userController.getUserBlockedByUser
+)
 
 // swagger for getProfile
 /**
@@ -941,7 +943,7 @@ router.get(
  *                   description: Email of the user
  *                   example:
  */
-router.get('/api/user/profile/:userId', userController.getProfile);
+router.get('/api/user/profile/:userId', userController.getProfile)
 
 /**
  * @swagger
@@ -1239,23 +1241,23 @@ router.get('/api/user/profile/:userId', userController.getProfile);
  *       500:
  *         description: Internal server error
  */
-router.get('/api/auth/user/my-event', userController.getMyEvents);
+router.get('/api/auth/user/my-event', userController.getMyEvents)
 router.get(
   '/api/user/events/interest/:interestId',
-  userController.getEventsByInterest,
-);
+  userController.getEventsByInterest
+)
 router.get(
   '/api/user/blogs/interest/:interestId',
-  userController.getBlogsByInterest,
-);
-router.get('/api/auth/user/events/suggest', userController.getSuggestEvent);
-router.get('/api/auth/user/event', eventController.getUserEvent);
-router.post('/api/auth/user/event/join-event', eventController.joinEvent);
-router.put('/api/auth/user/event/leave-event', eventController.leaveEvent);
+  userController.getBlogsByInterest
+)
+router.get('/api/auth/user/events/suggest', userController.getSuggestEvent)
+router.get('/api/auth/user/event', eventController.getUserEvent)
+router.post('/api/auth/user/event/join-event', eventController.joinEvent)
+router.put('/api/auth/user/event/leave-event', eventController.leaveEvent)
 router.get(
   '/api/auth/user/event/event-participants',
-  eventController.getEventParticipants,
-);
+  eventController.getEventParticipants
+)
 /**
  * @swagger
  * /api/interest:
@@ -1535,20 +1537,20 @@ router.get(
  *       500:
  *         description: Internal server error
  */
-router.get('/api/interest', interestController.getInterests);
-router.post('/api/interest', interestController.createInterest);
-router.get('/api/interest/:interestId', interestController.getInterest);
-router.put('/api/interest/:interestId', interestController.updateInterest);
+router.get('/api/interest', interestController.getInterests)
+router.post('/api/interest', interestController.createInterest)
+router.get('/api/interest/:interestId', interestController.getInterest)
+router.put('/api/interest/:interestId', interestController.updateInterest)
 router.put(
   '/api/interest/image/:interestId',
   uploadCloud.single('image'),
-  interestController.updateImage,
-);
-router.delete('/api/interest', interestController.deleteInterest);
-router.get('/api/interests/toppick', interestController.getToppick);
-router.get('/api/interests/parent', interestController.getParentInterests);
-router.get('/api/admin/users', admController.getUsers);
-router.get('/api/interest/count/blog', interestController.countBlogByInterest);
+  interestController.updateImage
+)
+router.delete('/api/interest', interestController.deleteInterest)
+router.get('/api/interests/toppick', interestController.getToppick)
+router.get('/api/interests/parent', interestController.getParentInterests)
+router.get('/api/admin/users', admController.getUsers)
+router.get('/api/interest/count/blog', interestController.countBlogByInterest)
 /**
  * @swagger
  * /api/admin/user/{userId}:
@@ -1684,10 +1686,10 @@ router.get('/api/interest/count/blog', interestController.countBlogByInterest);
  *       '500':
  *         description: Internal Server Error
  */
-router.get('/api/admin/user/:userId', admController.getUser);
-router.put('/api/admin/user/:userId', admController.updateUserStatus);
-router.put('/api/admin/blog/:blogId', admController.updateBlogStatus);
-router.put('/api/admin/event/:eventId', admController.updateEventStatus);
+router.get('/api/admin/user/:userId', admController.getUser)
+router.put('/api/admin/user/:userId', admController.updateUserStatus)
+router.put('/api/admin/blog/:blogId', admController.updateBlogStatus)
+router.put('/api/admin/event/:eventId', admController.updateEventStatus)
 // EVENT SECTION
 //  Phân quyền Authorization -> Middleware handle -> Middleware ???
 /**
@@ -2034,21 +2036,21 @@ router.put('/api/admin/event/:eventId', admController.updateEventStatus);
  *       400:
  *         description: Bad request
  */
-router.get('/api/event', eventController.getEvents);
+router.get('/api/event', eventController.getEvents)
 
-router.post('/api/event', eventController.createEvent);
-router.get('/api/event/:eventId', eventController.getEvent);
-router.put('/api/event/:eventId', eventController.updateEvent);
-router.delete('/api/event/:eventId', eventController.deleteEvent);
-router.get('/api/event/new/events', eventController.getNewEvents);
+router.post('/api/event', eventController.createEvent)
+router.get('/api/event/:eventId', eventController.getEvent)
+router.put('/api/event/:eventId', eventController.updateEvent)
+router.delete('/api/event/:eventId', eventController.deleteEvent)
+router.get('/api/event/new/events', eventController.getNewEvents)
 
-router.get('/api/event/popular/events', eventController.getPopularEvents);
-router.get('/api/url/event', eventController.getEventUrl);
+router.get('/api/event/popular/events', eventController.getPopularEvents)
+router.get('/api/url/event', eventController.getEventUrl)
 router.post(
   '/api/image',
   uploadCloud.single('background_img'),
-  eventController.updateImage,
-);
+  eventController.updateImage
+)
 /**
  * @swagger
  * /api/blog:
@@ -2870,55 +2872,55 @@ router.post(
  *       '500':
  *         description: Internal server error
  */
-router.get('/api/blog', blogController.getBlogs);
-router.get('/api/auth/user/blog', blogController.getUserBlog);
-router.get('/api/blog/:blogId', blogController.getBlog);
-router.post('/api/blog', blogController.createBlog);
-router.put('/api/blog/:blogId', blogController.updateBlog);
-router.delete('/api/blog/:blogId', blogController.deleteBlog);
-router.get('/api/url/blog', blogController.getBlogUrl);
+router.get('/api/blog', blogController.getBlogs)
+router.get('/api/auth/user/blog', blogController.getUserBlog)
+router.get('/api/blog/:blogId', blogController.getBlog)
+router.post('/api/blog', blogController.createBlog)
+router.put('/api/blog/:blogId', blogController.updateBlog)
+router.delete('/api/blog/:blogId', blogController.deleteBlog)
+router.get('/api/url/blog', blogController.getBlogUrl)
 router.put(
   '/api/blog/image/:blogId',
   uploadCloud.single('image'),
-  blogController.updateImg,
-);
-router.get('/api/blogs/popular', blogController.getPopularBlogs);
-router.get('/api/blog/new/blogs', blogController.getNewBlogs);
-router.post('/api/blog/search', blogController.searchByName);
-router.get('/api/auth/user/my-blog', blogController.getMyBlogs);
+  blogController.updateImg
+)
+router.get('/api/blogs/popular', blogController.getPopularBlogs)
+router.get('/api/blog/new/blogs', blogController.getNewBlogs)
+router.post('/api/blog/search', blogController.searchByName)
+router.get('/api/auth/user/my-blog', blogController.getMyBlogs)
 
-router.get('/api/blog/comment/:blogId', blogController.getComments);
-router.post('/api/blog/comment', blogController.createComment);
-router.put('/api/blog/comment/:commentId', blogController.updateComment);
-router.delete('/api/blog/comment/:commentId', blogController.deleteComment);
+router.get('/api/blog/comment/:blogId', blogController.getComments)
+router.post('/api/blog/comment', blogController.createComment)
+router.put('/api/blog/comment/:commentId', blogController.updateComment)
+router.delete('/api/blog/comment/:commentId', blogController.deleteComment)
 
-router.post('/api/blogs/like', blogController.likeBlog);
-router.put('/api/blogs/like', blogController.unLikeBlog);
+router.post('/api/blogs/like', blogController.likeBlog)
+router.put('/api/blogs/like', blogController.unLikeBlog)
 
-router.get('/api/user/report', reportController.getAllReportStatus);
+router.get('/api/user/report', reportController.getAllReportStatus)
 
-router.get('/api/admin/report', reportController.getAllReport);
+router.get('/api/admin/report', reportController.getAllReport)
 
-router.get('/api/admin/blogs/report', reportController.getAllBlogReport);
-router.post('/api/user/blogs/report', reportController.createBlogReport);
+router.get('/api/admin/blogs/report', reportController.getAllBlogReport)
+router.post('/api/user/blogs/report', reportController.createBlogReport)
 router.delete(
   '/api/user/blogs/report/:reportId',
-  reportController.deleteBlogReport,
-);
+  reportController.deleteBlogReport
+)
 
-router.get('/api/admin/events/report', reportController.getAllEventReport);
-router.post('/api/user/events/report', reportController.createEventReport);
+router.get('/api/admin/events/report', reportController.getAllEventReport)
+router.post('/api/user/events/report', reportController.createEventReport)
 router.delete(
   '/api/user/events/report/:reportId',
-  reportController.deleteEventReport,
-);
+  reportController.deleteEventReport
+)
 
-router.get('/api/admin/users/report', reportController.getAllUserReport);
-router.post('/api/user/users/report', reportController.createUserReport);
+router.get('/api/admin/users/report', reportController.getAllUserReport)
+router.post('/api/user/users/report', reportController.createUserReport)
 router.delete(
   '/api/user/users/report/:reportId',
-  reportController.deleteUserReport,
-);
+  reportController.deleteUserReport
+)
 /**
  * @swagger
  * /api/moderator/login:
@@ -3018,10 +3020,10 @@ router.delete(
  *       '500':
  *         description: Internal server error
  */
-router.post('/api/moderator/login', modController.loginMod);
-router.put('/api/moderator/blog/:blogId', modController.censorBlog);
-router.put('/api/moderator/event/:eventId', modController.censorEvent);
-router.get('/api/test', locationController.getMiddlePoint);
+router.post('/api/moderator/login', modController.loginMod)
+router.put('/api/moderator/blog/:blogId', modController.censorBlog)
+router.put('/api/moderator/event/:eventId', modController.censorEvent)
+router.get('/api/test', locationController.getMiddlePoint)
 // MATCH SECTION
 /**
  * @swagger
@@ -3328,32 +3330,48 @@ router.get('/api/test', locationController.getMiddlePoint);
  *       '500':
  *         description: Internal Server Error
  */
-router.put('/api/user/schedule/status', scheduleController.changeStatus);
-router.get('/api/match/user-status/count', matchController.countUserByStatus);
-router.get(
-  '/api/auth/matches-interest',
-  matchController.getUserMatchByInterest,
-);
+router.put('/api/user/schedule/status', scheduleController.changeStatus)
+router.get('/api/match/user-status/count', matchController.countUserByStatus)
+router.get('/api/auth/matches-interest', matchController.getUserMatchByInterest)
 
-router.get('/api/auth/matched', matchController.getUserMatchWithStatus);
+router.get('/api/auth/matched', matchController.getUserMatchWithStatus)
 
 router.get(
   '/api/auth/pending-for-matched',
-  matchController.getUserMatchWithPendingStatus,
-);
+  matchController.getUserMatchWithPendingStatus
+)
 
-router.put('/api/auth/matching-status', matchController.updateUserMatchStatus);
+router.put('/api/auth/matching-status', matchController.updateUserMatchStatus)
 
-router.post('/api/user/schedule', scheduleController.createSchedule);
+router.post('/api/user/schedule', scheduleController.createSchedule)
 router.get(
   '/api/auth/user/schedule/:anotherUserId',
-  scheduleController.getScheduleBetweenUsers,
-);
-router.post('/api/auth/schedule/rating', scheduleController.createRating);
+  scheduleController.getScheduleBetweenUsers
+)
+router.post('/api/auth/schedule/rating', scheduleController.createRating)
 router.get(
   '/api/user/schedule/schedule-details',
-  scheduleController.getScheduleRating,
-);
+  scheduleController.getScheduleRating
+)
+
+/**
+ * @swagger
+ * /api/auth/calendar:
+ *   get:
+ *     summary: Get auth calendar
+ *     tags:
+ *       - CALENDAR
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       '200':
+ *         description: Successfully retrieved chat history.
+ *       '400':
+ *         description: Bad request. Invalid parameters provided.
+ *       '500':
+ *         description: An internal server error occurred.
+ */
+router.get('/api/auth/calendar', scheduleController.getCalendar)
 /**
  * @swagger
  * tags:
@@ -3440,19 +3458,19 @@ router.get(
  *       '500':
  *         description: An internal server error occurred.
  */
-router.get('/api/auth/chat-history', chatController.getChatHistory);
+router.get('/api/auth/chat-history', chatController.getChatHistory)
 
 router.put(
   '/api/location/updateCurrentLocation',
-  locationController.updateCurrentLocation,
-);
-router.get('/api/location/getDistance', locationController.getDistance);
+  locationController.updateCurrentLocation
+)
+router.get('/api/location/getDistance', locationController.getDistance)
 router.get(
   '/api/location/getRecommendCafe',
-  locationController.getRecommendCafe,
-);
-router.get('/api/location/getDistrict', locationController.getDistrict);
-router.get('/api/location/getProvince', locationController.getProvince);
+  locationController.getRecommendCafe
+)
+router.get('/api/location/getDistrict', locationController.getDistrict)
+router.get('/api/location/getProvince', locationController.getProvince)
 /**
  * @swagger
  * /api/location/updateCurrentLocation:
@@ -3620,7 +3638,7 @@ router.get('/api/location/getProvince', locationController.getProvince);
  *       '500':
  *         description: An internal server error occurred.
  */
-router.get('/test-notification', notificationController.sendNotification);
+router.get('/test-notification', notificationController.sendNotification)
 
 /**
  * @swagger
@@ -3656,8 +3674,8 @@ router.get('/test-notification', notificationController.sendNotification);
  */
 router.get(
   '/api/auth/notification/get-history',
-  notificationController.getNotificationHistoryByUserId,
-);
+  notificationController.getNotificationHistoryByUserId
+)
 
 /**
  * @swagger
@@ -3683,18 +3701,18 @@ router.get(
  */
 router.get(
   '/api/notifications/sendNotificationForSchedule',
-  notificationController.sendNotificationForSchedule,
-);
+  notificationController.sendNotificationForSchedule
+)
 
 router.get(
   '/api/auth/schedule/get-history',
-  scheduleController.getScheduleHistoryByUserId,
-);
+  scheduleController.getScheduleHistoryByUserId
+)
 
-router.get('/api/map/province', mapController.getProvinces);
-router.post('/api/map/province', mapController.createProvince);
-router.put('/api/map/province', mapController.updateProvince);
-router.delete('/api/map/province', mapController.deleteProvince);
+router.get('/api/map/province', mapController.getProvinces)
+router.post('/api/map/province', mapController.createProvince)
+router.put('/api/map/province', mapController.updateProvince)
+router.delete('/api/map/province', mapController.deleteProvince)
 /**
  * @swagger
  * /api/map/province:
@@ -3791,10 +3809,10 @@ router.delete('/api/map/province', mapController.deleteProvince);
  *         description: An internal server error occurred.
  */
 
-router.get('/api/map/district', mapController.getDistricts);
-router.post('/api/map/district', mapController.createDistrict);
-router.put('/api/map/district', mapController.updateDistrict);
-router.delete('/api/map/district', mapController.deleteDistrict);
+router.get('/api/map/district', mapController.getDistricts)
+router.post('/api/map/district', mapController.createDistrict)
+router.put('/api/map/district', mapController.updateDistrict)
+router.delete('/api/map/district', mapController.deleteDistrict)
 /**
  * @swagger
  * /api/map/district:
@@ -3929,8 +3947,8 @@ router.delete('/api/map/district', mapController.deleteDistrict);
  */
 router.get(
   '/api/auth/user/auth/setting-filter',
-  userController.getUserFilterSetting,
-);
+  userController.getUserFilterSetting
+)
 /**
  * @swagger
  * /api/auth/user/auth/setting-filter:
@@ -3980,6 +3998,10 @@ router.get(
  *                 type: string
  *                 format: uuid
  *                 description: Gender ID for filtering
+ *               priority_interest_ids:
+ *                 type: string
+ *                 description: Priority interest IDs for filtering
+ *                 example: "1;2;3"
  *     responses:
  *       '200':
  *         description: Successfully upserted user setting filter.
@@ -3990,8 +4012,8 @@ router.get(
  */
 router.put(
   '/api/auth/user/auth/setting-filter',
-  userController.upsertUserFilterSetting,
-);
+  userController.upsertUserFilterSetting
+)
 
 /**
  * @swagger
@@ -4011,13 +4033,18 @@ router.put(
  *         schema:
  *           type: string
  *         example: 20
-*       - in: query
+ *       - in: query
  *         name: offset
  *         required: true
  *         description: number of page
  *         schema:
  *           type: string
  *         example: 0
+ *       - in: query
+ *         name: interest_ids
+ *         description: id interest
+ *         schema:
+ *           type: string
  *     responses:
  *       '200':
  *         description: Successfully retrieved province.
@@ -4028,6 +4055,166 @@ router.put(
  */
 router.get(
   '/api/auth/user/auth/user-filter-setting',
-  userController.getUserByFilterSetting,
-);
-export default router;
+  userController.getUserByFilterSetting
+)
+/**
+ * @swagger
+ * /api/auth/image:
+ *   get:
+ *     security:
+ *       - BearerAuth: []
+ *     summary: Get Image from ref_id and type
+ *     description: Upload multiple image
+ *     tags:
+ *       - IMAGE
+ *     parameters:
+ *       - in: query
+ *         name: ref_id
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: type
+ *         required: true
+ *         schema:
+ *           type: number
+ *       - in: query
+ *         name: limit
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: 20
+ *       - in: query
+ *         name: offset
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: 0
+ *     responses:
+ *       '200':
+ *         description: Successfully.
+ *       '400':
+ *         description: Bad request.
+ *       '500':
+ *         description: An internal server error occurred.
+ */
+router.get('/api/auth/image', imageController.getImageFromRefIdAndType)
+/**
+ * @swagger
+ * /api/auth/image:
+ *   post:
+ *     security:
+ *       - BearerAuth: []
+ *     summary: Upload multiple image
+ *     description: Upload multiple image
+ *     tags:
+ *       - IMAGE
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               items:
+ *                 type: array
+ *                 items:
+ *                   properties:
+ *                     ref_id:
+ *                       type: string
+ *                       required: true
+ *                     type:
+ *                       type: number
+ *                       required: true
+ *                     url:
+ *                       type: string
+ *                       required: true
+ *     responses:
+ *       '200':
+ *         description: Successfully.
+ *       '400':
+ *         description: Bad request.
+ *       '500':
+ *         description: An internal server error occurred.
+ */
+router.post('/api/auth/image', imageController.uploadMultipleImage)
+
+/**
+ * @swagger
+ * /api/auth/image:
+ *   put:
+ *     security:
+ *       - BearerAuth: []
+ *     summary: Upload multiple image
+ *     description: Upload multiple image
+ *     tags:
+ *       - IMAGE
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               ref_id:
+ *                 type: string
+ *                 required: true
+ *               type:
+ *                 type: number
+ *                 required: true
+ *               urls:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *     responses:
+ *       '200':
+ *         description: Successfully.
+ *       '400':
+ *         description: Bad request.
+ *       '500':
+ *         description: An internal server error occurred.
+ */
+router.put('/api/auth/image', imageController.updateMultipleImage)
+
+/**
+ * @swagger
+ * /api/auth/discuss:
+ *   post:
+ *     security:
+ *       - BearerAuth: []
+ *     summary: Create Discuss
+ *     description: Create Discuss
+ *     tags:
+ *       - DISCUSS
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               items:
+ *                 type: array
+ *                 items:
+ *                   properties:
+ *                     ref_id:
+ *                       type: string
+ *                       required: true
+ *                     type:
+ *                       type: number
+ *                       required: true
+ *                     content:
+ *                       type: string
+ *                     title:
+ *                       type: string
+ *     responses:
+ *       '200':
+ *         description: Successfully.
+ *       '400':
+ *         description: Bad request.
+ *       '500':
+ *         description: An internal server error occurred.
+ */
+router.post('/api/auth/discuss', discussController.createDiscuss)
+
+export default router

@@ -1,24 +1,19 @@
+import dayjs from 'dayjs'
 import {
   Event,
   SequelizeInstance,
   EventParticipation,
-} from '../utility/DbHelper.js';
-import {
-  Event,
-  SequelizeInstance,
-  EventParticipation,
-} from '../utility/DbHelper.js';
+} from '../utility/DbHelper.js'
 
-export async function getEvents(title, date, page) {
-  let sqlQuery = '';
-  let name = title;
+export async function getEvents(title, date, page, size) {
+  let sqlQuery = ''
+  let name = title
   if (name == null) {
-    name = '';
+    name = ''
   }
-  let date1 = new Date(date);
+  let date1 = new Date(date)
   if (date1 == 'Invalid Date') {
-    date1 = new Date('1/1/1000');
-    date1 = new Date('1/1/1000');
+    date1 = new Date('1/1/1000')
   }
   if (page) {
     sqlQuery = `
@@ -33,11 +28,22 @@ export async function getEvents(title, date, page) {
     join
       "user" u
       on u.user_id = e.organizer_id
-    where  (e.time_of_event >= '${date1.toUTCString()}' or e.end_of_event <= '${date1.toUTCString()}') and e.title  like '%${name}%'
+    where ${
+      date
+        ? `(e.time_of_event >= '${date1.toUTCString()}' or e.end_of_event <= '${date1.toUTCString()}') and `
+        : `e.time_of_event >= '${new dayjs()
+            .subtract(7, 'day')
+            .format(
+              'YYYY-MM-DD HH:mm:ss'
+            )}' and (e.time_of_event <= '${new dayjs()
+            .add(7, 'day')
+            .format('YYYY-MM-DD 23:59:59')} or e.end_of_event <= '${new dayjs()
+            .add(7, 'day')
+            .format('YYYY-MM-DD 23:59:59')}')' and`
+    } e.title like '%${name}%'
     order by e.created_at desc
     offset ((${page} - 1) * 5) rows 
- 	  fetch next 5 rows only
-  `;
+  `
   } else {
     sqlQuery = `
     select 
@@ -51,16 +57,19 @@ export async function getEvents(title, date, page) {
     join
       "user" u
       on u.user_id = e.organizer_id
-    where  (e.time_of_event >= '${date1.toUTCString()}' or e.end_of_event <= '${date1.toUTCString()}') and e.title  like '%${name}%'
+    where ${
+      date1
+        ? `(e.time_of_event >= '${date1.toUTCString()}' or e.end_of_event <= '${date1.toUTCString()}') and `
+        : ''
+    } e.title  like '%${name}%'
     order by e.created_at desc
-    `;
+    `
   }
-  console.log(sqlQuery);
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function getEvent(eventId) {
@@ -77,12 +86,12 @@ export async function getEvent(eventId) {
     "user" u
     on e.organizer_id = u.user_id
   where e.event_id = '${eventId}'
-  `;
+  `
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 export async function createEvent(eventId, dataObj) {
   return await Event.create({
@@ -99,13 +108,13 @@ export async function createEvent(eventId, dataObj) {
     interest_id: dataObj.interest_id,
     is_visible: true,
     participants_count: 0,
-  });
+  })
 }
 
 export async function updateImage(fileData) {
   return await {
     background_img: fileData?.path,
-  };
+  }
 }
 
 export async function updateEvent(eventId, eventDetails) {
@@ -126,19 +135,19 @@ export async function updateEvent(eventId, eventDetails) {
     },
     {
       where: { event_id: eventId },
-    },
-  );
+    }
+  )
 }
 
 export async function deleteEvent(eventId) {
   const deletedEvent = await Event.destroy({
     where: { event_id: eventId },
-  });
-  return deletedEvent;
+  })
+  return deletedEvent
 }
 
 export async function getNewEvents() {
-  const date = new Date(Date.now());
+  const date = new Date(Date.now())
   const sqlQuery = `
   select 
     e.event_id, e.title, e.background_img, e.time_of_event, e.address, e.participants_count, e.end_of_event, e.created_at
@@ -159,16 +168,16 @@ export async function getNewEvents() {
           or (blocker_id = e.organizer_id and blocked_id = u.user_id)
     )
   order by e.created_at desc
-  `;
+  `
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function getEventsByDate(dateString) {
-  const date = new Date(dateString.date);
+  const date = new Date(dateString.date)
   const sqlQuery = `
   select 
     e.event_id, e.title, e.background_img, e.time_of_event, e.address, e.participants_count, e.end_of_event
@@ -189,22 +198,22 @@ export async function getEventsByDate(dateString) {
           or (blocker_id = e.organizer_id and blocked_id = u.user_id)
     )
   order by e.time_of_event
-  `;
+  `
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function getEventsByName(dataObj) {
-  let name = dataObj.title;
+  let name = dataObj.title
   if (name == null) {
-    name = '';
+    name = ''
   }
-  let date1 = new Date(dataObj.date);
+  let date1 = new Date(dataObj.date)
   if (date1 == 'Invalid Date') {
-    date1 = new Date('1/1/1000');
+    date1 = new Date('1/1/1000')
   }
   const sqlQuery = `
   select 
@@ -225,16 +234,16 @@ export async function getEventsByName(dataObj) {
     where (blocker_id = u.user_id and blocked_id = e.organizer_id)
         or (blocker_id = e.organizer_id and blocked_id = u.user_id)
   )
-  `;
+  `
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function getPopularEvents() {
-  let date = new Date(Date.now());
+  let date = new Date(Date.now())
   const sqlQuery = `
   select 
 	e.event_id 
@@ -266,12 +275,12 @@ export async function getPopularEvents() {
     e.time_of_event desc
     , e.participants_count desc
   limit 10
-  `;
+  `
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 export async function getEventOccurToday() {
   const sqlQuery = `
@@ -327,23 +336,23 @@ GROUP BY
   event_minute,
   event_second,
   user_token
-  `;
+  `
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function getUserEvent(title, date, page) {
-  let sqlQuery = '';
-  let name = title;
+  let sqlQuery = ''
+  let name = title
   if (name == null) {
-    name = '';
+    name = ''
   }
-  let date1 = new Date(date);
+  let date1 = new Date(date)
   if (date1 == 'Invalid Date') {
-    date1 = new Date(Date.now());
+    date1 = new Date(Date.now())
   }
   if (page) {
     sqlQuery = `
@@ -367,7 +376,7 @@ export async function getUserEvent(title, date, page) {
       )
     offset ((${page} - 1) * 5) rows 
  	  fetch next 5 rows only
-  `;
+  `
   } else {
     sqlQuery = `
     select 
@@ -388,13 +397,13 @@ export async function getUserEvent(title, date, page) {
         where (blocker_id = u.user_id and blocked_id = e.organizer_id)
             or (blocker_id = e.organizer_id and blocked_id = u.user_id)
       )
-    `;
+    `
   }
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function joinEvent(participation_id, event_id, userId) {
@@ -402,17 +411,17 @@ export async function joinEvent(participation_id, event_id, userId) {
     UPDATE event 
     SET participants_count = participants_count + 1
     WHERE event_id = '${event_id}'
-  `;
+  `
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
+  })
   return await EventParticipation.create({
     participation_id: participation_id,
     user_id: userId,
     event_id: event_id,
     event_participation_status: 'Đã tham gia',
-  });
+  })
 }
 
 export async function leaveEvent(event_id, userId) {
@@ -420,18 +429,18 @@ export async function leaveEvent(event_id, userId) {
     UPDATE event 
     SET participants_count = participants_count - 1
     WHERE event_id = '${event_id}'
-  `;
+  `
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
+  })
   const deletedEventParticipation = await EventParticipation.destroy({
     where: {
       event_id: event_id,
       user_id: userId,
     },
-  });
-  return deletedEventParticipation;
+  })
+  return deletedEventParticipation
 }
 
 export async function getEventParticipants(event_id) {
@@ -442,10 +451,10 @@ export async function getEventParticipants(event_id) {
    	 left join event_participation ep 
    	 on ep.user_id = u.user_id 
    	 where ep.event_id = '${event_id}'
-  `;
+  `
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }

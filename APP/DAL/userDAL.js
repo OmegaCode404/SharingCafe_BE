@@ -4,20 +4,25 @@ import {
   UserInterest,
   SequelizeInstance,
   UserFilterSetting,
-} from '../utility/DbHelper.js';
+} from '../utility/DbHelper.js'
 
 export async function getUserFilterSetting(user_id) {
-  return await UserFilterSetting.findOne({ where: { user_id } });
+  return await UserFilterSetting.findOne({ where: { user_id } })
 }
 export async function upsertUserFilterSetting(user_id, dataObj) {
   const [userFilterSetting, created] = await UserFilterSetting.upsert({
     user_id,
     ...dataObj,
-  });
-  return { userFilterSetting, created };
+  })
+  return { userFilterSetting, created }
 }
 
-export async function getUserByFilterSetting(user_id, limit, offset) {
+export async function getUserByFilterSetting(
+  interest_ids,
+  user_id,
+  limit,
+  offset
+) {
   let sqlQuery = `
   WITH user_filter_matching AS (
     SELECT
@@ -86,25 +91,33 @@ export async function getUserByFilterSetting(user_id, limit, offset) {
     province p ON p.province_id = u.province_id
   WHERE
     u.user_id NOT IN (SELECT user_id_liked FROM user_matched)
-AND u.user_id NOT IN (SELECT current_user_id FROM user_liked)
-AND CASE WHEN (select by_province from user_filter_matching) = TRUE THEN u.province_id in (select province_id from user_filter_matching) ELSE TRUE END
-AND CASE WHEN (select by_district from user_filter_matching) = TRUE THEN u.district_id in (select district_id from user_filter_matching) ELSE TRUE END
-AND CASE WHEN (select by_sex from user_filter_matching) = TRUE THEN u.gender_id in (select sex_id from user_filter_matching) ELSE TRUE END
-AND CASE WHEN (select by_age from user_filter_matching) = TRUE THEN ((SELECT min_age FROM user_filter_matching) <= DATE_PART('year', AGE(current_date, u.dob)) AND(SELECT max_age FROM user_filter_matching) >= DATE_PART('year', AGE(current_date, u.dob))) ELSE TRUE END
-AND CASE WHEN (select by_interest from user_filter_matching) = TRUE THEN (EXISTS (SELECT 1 FROM user_interest ui WHERE ui.user_id = u.user_id AND ui.interest_id IN (SELECT interest_id FROM user_interested))) ELSE TRUE END
-AND u.user_id != '${user_id}'
-ORDER BY RANDOM()`;
+    AND u.user_id NOT IN (SELECT current_user_id FROM user_liked)
+    AND CASE WHEN (select by_province from user_filter_matching) = TRUE THEN u.province_id in (select province_id from user_filter_matching) ELSE TRUE END
+    AND CASE WHEN (select by_district from user_filter_matching) = TRUE THEN u.district_id in (select district_id from user_filter_matching) ELSE TRUE END
+    AND CASE WHEN (select by_sex from user_filter_matching) = TRUE THEN u.gender_id in (select sex_id from user_filter_matching) ELSE TRUE END
+    AND CASE WHEN (select by_age from user_filter_matching) = TRUE THEN ((SELECT min_age FROM user_filter_matching) <= DATE_PART('year', AGE(current_date, u.dob)) AND(SELECT max_age FROM user_filter_matching) >= DATE_PART('year', AGE(current_date, u.dob))) ELSE TRUE END
+    AND CASE WHEN (select by_interest from user_filter_matching) = TRUE THEN (EXISTS (SELECT 1 FROM user_interest ui WHERE ui.user_id = u.user_id AND ui.interest_id IN (${
+      interest_ids
+        ? `${interest_ids
+            .split(';')
+            .map((id) => `'${id}'`)
+            .join(',')}`
+        : 'SELECT interest_id FROM user_interested'
+    }))) ELSE TRUE END
+    AND u.user_id != '${user_id}'
+ORDER BY RANDOM()
+`
 
   if (limit && offset) {
     sqlQuery += `
     limit ${limit} 
-    offset ${offset}`;
+    offset ${offset}`
   }
   let result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function getUserDetails(email, password) {
@@ -146,9 +159,9 @@ export async function getUserDetails(email, password) {
       is_available: true,
     },
     limit: 1,
-  });
-  console.log(user.dataValues);
-  return user;
+  })
+  console.log(user.dataValues)
+  return user
 }
 
 export async function register(userId, user) {
@@ -165,7 +178,7 @@ export async function register(userId, user) {
     role_id: '6150886b-5920-4884-8e43-d4efb62f89d3',
     province_id: user.province_id,
     district_id: user.district_id,
-  });
+  })
 }
 
 export async function getUserByPhone(phone) {
@@ -183,7 +196,7 @@ export async function getUserByPhone(phone) {
   // return result;
   return await User.findOne({
     where: { phone: phone },
-  });
+  })
 }
 
 export async function getUserByEmail(email) {
@@ -201,7 +214,7 @@ export async function getUserByEmail(email) {
   // return result;
   return await User.findOne({
     where: { email: email },
-  });
+  })
 }
 
 export async function getUserToken(userId) {
@@ -211,12 +224,12 @@ export async function getUserToken(userId) {
   from 
     "user" u
    where u.user_id = '${userId}'
-  `;
+  `
   let result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 export async function getUserInfoById(userId) {
   let sqlQuery = `
@@ -228,29 +241,27 @@ export async function getUserInfoById(userId) {
   from 
     "user" u
    where u.user_id = '${userId}'
-  `;
+  `
   let result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 export async function updateUserToken(email, token) {
   let sqlQuery = `
       UPDATE public."user" 
       SET 
         token_id = '${token}'
-        token_id = '${token}'
       WHERE 
         email = '${email}'
-        email = '${email}'
-    `;
+    `
 
   let [result] = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.UPDATE,
-  });
+  })
 
-  return result;
+  return result
 }
 
 export async function getInterests(userId) {
@@ -267,12 +278,12 @@ export async function getInterests(userId) {
     "user" u
     on u.user_id = q.user_id
    where q.user_id = '${userId}'
-  `;
+  `
   let result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function createInterest(userInterestId, userInterestDetails) {
@@ -280,7 +291,7 @@ export async function createInterest(userInterestId, userInterestDetails) {
     user_interest_id: userInterestId,
     interest_id: userInterestDetails.interest_id,
     user_id: userInterestDetails.user_id,
-  });
+  })
 }
 
 export async function getInterest(userInterestId) {
@@ -297,26 +308,26 @@ export async function getInterest(userInterestId) {
     "user" u
     on u.user_id = q.user_id
    where q.user_interest_id  = '${userInterestId}'
-  `;
+  `
   let result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function updateInterest(userInterest, userInterestDetails) {
   await userInterest.update({
     interest_id: userInterestDetails.interest_id,
-  });
-  return userInterest;
+  })
+  return userInterest
 }
 
 export async function deleteInterests(interestIds) {
   let deletedInterest = await UserInterest.destroy({
     where: { user_interest_id: interestIds },
-  });
-  return deletedInterest;
+  })
+  return deletedInterest
 }
 export async function getUserDetailsByEmail(email) {
   let sqlQuery = `
@@ -329,14 +340,14 @@ export async function getUserDetailsByEmail(email) {
       role r 
     on u.role_id = r.role_id
     where u.email = '${email}'
-  `;
+  `
 
   let userDetails = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
+  })
 
-  return userDetails;
+  return userDetails
 }
 export async function getUserDetailsById(userId) {
   let sqlQuery = `
@@ -368,18 +379,18 @@ export async function getUserDetailsById(userId) {
     where u.user_id = '${userId}'
   GROUP BY 
     u.user_id, u.role_id;  
-  `;
+  `
   let userDetails = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return userDetails;
+  })
+  return userDetails
 }
 export async function getUserMatchByInterest(
   userId,
   filterByAge,
   filterByGender,
-  filterByAddress,
+  filterByAddress
 ) {
   let sqlQuery = `
    WITH interests AS (
@@ -546,24 +557,24 @@ WHERE
  *
 FROM total t
  where 1=1
-  `;
+  `
   filterByAge
     ? (sqlQuery += `
 and t.age = '${filterByAge}'
 `)
-    : '';
+    : ''
   filterByGender
     ? (sqlQuery += `
 and t.gender = '${filterByGender}'
 `)
-    : '';
+    : ''
 
   let userDetails = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
+  })
 
-  return userDetails;
+  return userDetails
 }
 
 export async function getUserMatchWithStatus(userId, status) {
@@ -580,7 +591,7 @@ WHERE
     (um.user_id_liked = '${userId}' or um.current_user_id = '${userId}')
     AND ums.user_match_status_id IS NOT null
     and u.user_id <> '${userId}'
-  `;
+  `
 
   if (status == 'Pending') {
     sqlQuery = ` 
@@ -596,16 +607,16 @@ WHERE
     um.user_id_liked = '${userId}'
     AND ums.user_match_status_id IS NOT null
     and u.user_id <> '${userId}'
-    AND ums.user_match_status = '${status}'`;
+    AND ums.user_match_status = '${status}'`
   } else if (status == 'Matched') {
-    sqlQuery += ` AND ums.user_match_status = '${status}'`;
+    sqlQuery += ` AND ums.user_match_status = '${status}'`
   }
   let userDetails = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
+  })
 
-  return userDetails;
+  return userDetails
 }
 
 export async function getUserMatchWithPendingStatus(userId) {
@@ -623,13 +634,13 @@ export async function getUserMatchWithPendingStatus(userId) {
     where 
       um.current_user_id  = '${userId}'
       and ums.user_match_status = 'Pending'
-      `;
+      `
   let userDetails = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
+  })
 
-  return userDetails;
+  return userDetails
 }
 
 export async function getUserMatchByInterestPaging(
@@ -638,7 +649,7 @@ export async function getUserMatchByInterestPaging(
   filterByGender,
   filterByAddress,
   limit,
-  offset,
+  offset
 ) {
   let sqlQuery = `
 WITH interests AS (
@@ -839,28 +850,28 @@ FROM total t
 )
 select * from default_filter df
 where 1=1 
-`;
+`
   filterByAge
     ? (sqlQuery += `
 and df.age = '${filterByAge}'
 `)
-    : '';
+    : ''
   filterByGender
     ? (sqlQuery += `
 and df.gender = '${filterByGender}'
 `)
-    : '';
+    : ''
 
   sqlQuery += `
 limit ${limit} 
-offset ${offset}`;
+offset ${offset}`
 
   let userDetails = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
+  })
 
-  return userDetails;
+  return userDetails
 }
 
 export async function getMyEvents(userId) {
@@ -877,12 +888,12 @@ export async function getMyEvents(userId) {
     "user" u
     on e.organizer_id = u.user_id
   where e.organizer_id = '${userId}'
-  `;
+  `
   let result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function getEventsByInterest(interestId) {
@@ -899,12 +910,12 @@ export async function getEventsByInterest(interestId) {
     "user" u
     on e.organizer_id = u.user_id
   where e.interest_id = '${interestId}' and e.is_approve = true and e.is_visible = true
-  `;
+  `
   let result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function getBlogsByInterest(interestId) {
@@ -921,16 +932,16 @@ export async function getBlogsByInterest(interestId) {
     "user" u
     on u.user_id = b.user_id
    where b.interest_id = '${interestId}' and b.is_approve = true and b.is_visible = true
-  `;
+  `
   let result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function getSuggestEvent(userId) {
-  let date = new Date(Date.now());
+  let date = new Date(Date.now())
   let sqlQuery = `
   select 
     e.title, e.background_img, e.time_of_event, e.address, e.participants_count, i.name
@@ -946,12 +957,12 @@ export async function getSuggestEvent(userId) {
 		on e.interest_id = i.interest_id 
 	where u.user_id = '${userId}' and e.is_approve = true and e.is_visible = true and e.end_of_event >= '${date.toUTCString()}'
   order by e.participants_count desc
-  `;
+  `
   let result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function updateProfile(userId, profile) {
@@ -977,8 +988,8 @@ export async function updateProfile(userId, profile) {
     },
     {
       where: { user_id: userId },
-    },
-  );
+    }
+  )
 }
 
 export async function updateAvatar(userId, fileData) {
@@ -988,128 +999,128 @@ export async function updateAvatar(userId, fileData) {
     },
     {
       where: { user_id: userId },
-    },
-  );
+    }
+  )
 }
 export async function deleteUserInterests(userId) {
   let sqlQuery = `
   DELETE FROM public.user_interest
   WHERE user_id = '${userId}'
-  `;
+  `
   let result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.DELETE,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function upsertInterests(data) {
   let sqlQuery = `
   INSERT INTO public.user_interest (user_interest_id, interest_id, user_id, created_at) 
   VALUES(gen_random_uuid(), '${data.interest_id}', '${data.user_id}', now())
-  `;
+  `
   let result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function deleteUnlikeTopics(userId) {
   let sqlQuery = `
   DELETE FROM public.unlike_topic
   WHERE user_id = '${userId}'
-  `;
+  `
   let result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.DELETE,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function upsertUnlikeTopics(data) {
   let sqlQuery = `
   INSERT INTO public.unlike_topic (unlike_topic_id, user_id, topic, created_at) 
   VALUES(gen_random_uuid(), '${data.user_id}', '${data.topic}', now());
-  `;
+  `
   let result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  console.log(result);
-  return result;
+  })
+  console.log(result)
+  return result
 }
 
 export async function deletePersonalProblems(userId) {
   let sqlQuery = `
   DELETE FROM public.personal_problem
   WHERE user_id = '${userId}'
-  `;
+  `
   let result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.DELETE,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function upsertPersonalProblems(data) {
   let sqlQuery = `
   INSERT INTO public.personal_problem (personal_problem_id, user_id, problem, created_at) 
   VALUES(gen_random_uuid(), '${data.user_id}', '${data.problem}', now());
-  `;
+  `
   let result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function deleteFavoriteDrinks(userId) {
   let sqlQuery = `
   DELETE FROM public.favorite_drink
   WHERE user_id = '${userId}'
-  `;
+  `
   let result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.DELETE,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function upsertFavoriteDrinks(data) {
   let sqlQuery = `
   INSERT INTO public.favorite_drink (favorite_drink_id, user_id, favorite_drink, created_at) 
   VALUES(gen_random_uuid(), '${data.user_id}', '${data.favorite_drink}', now());
-  `;
+  `
   let result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function deleteFreeTimes(userId) {
   let sqlQuery = `
   DELETE FROM public.free_time
   WHERE user_id = '${userId}'
-  `;
+  `
   let result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.DELETE,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function upsertFreeTimes(data) {
   let sqlQuery = `
   INSERT INTO public.free_time (free_time_id, user_id, free_time, created_at) 
   VALUES(gen_random_uuid(), '${data.user_id}', '${data.free_time}', now());
-  `;
+  `
   let result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function getTokenId(userId) {
@@ -1118,7 +1129,7 @@ export async function getTokenId(userId) {
     where: {
       user_id: userId,
     },
-  });
+  })
 }
 
 export async function getLocationByUserId(userId) {
@@ -1127,7 +1138,7 @@ export async function getLocationByUserId(userId) {
     where: {
       user_id: userId,
     },
-  });
+  })
 }
 
 // update lat,lng of user
@@ -1139,8 +1150,8 @@ export async function updateLocation(userId, lat, lng) {
     },
     {
       where: { user_id: userId },
-    },
-  );
+    }
+  )
 }
 
 //get profile of userId
@@ -1170,23 +1181,23 @@ export async function getProfile(userId) {
     left join public.province p on p.province_id = u.province_id
     left join public.district d on d.district_id = u.district_id
     where u.user_id = '${userId}'
-    `;
+    `
   let result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function getProvince() {
   let sqlQuery = `
   select * from province
-  `;
+  `
   let result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 export async function getUserBlockedByUser(userId) {
   let sqlQuery = `
@@ -1199,12 +1210,12 @@ from "user" u
 inner join user_block ub 
 on blocked_id = u.user_id 
 and ub.blocker_id = '${userId}'
-  `;
+  `
   let result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function blockingAUser(userId, blockedId) {
@@ -1212,46 +1223,60 @@ export async function blockingAUser(userId, blockedId) {
   INSERT INTO public.user_block (blocker_id, blocked_id, created_at)
 VALUES ('${userId}', '${blockedId}', now())
 ON CONFLICT (blocker_id, blocked_id) DO NOTHING;
-  `;
+  `
   let result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 export async function unBlockingAUser(userId, blockedId) {
   let sqlQuery = `
     DELETE FROM public.user_block 
     WHERE blocker_id = '${userId}' AND blocked_id = '${blockedId}'
-  `;
+  `
   let result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.DELETE, // Changed QueryTypes.SELECT to QueryTypes.DELETE
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 export async function getBlockCouple(messageData) {
-  let { from, to } = messageData;
+  let { from, to } = messageData
   let sqlQuery = `
       SELECT *
       FROM public.user_block
       WHERE (blocker_id = '${from}' AND blocked_id = '${to}')
           OR (blocker_id = '${to}' AND blocked_id = '${from}')
-    `;
+    `
   let result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function getGender() {
   let sqlQuery = `
   select * from gender
-  `;
+  `
   let result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
+}
+
+export async function getUserInterests({ userIds }) {
+  var ids = userIds.map((id) => `'${id}'`).join(',')
+  let sqlQuery = `
+  select i.interest_id, i.user_id 
+  from user_interest i 
+  where i.user_id in (${ids})
+  `
+  let result = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  })
+  return result
 }

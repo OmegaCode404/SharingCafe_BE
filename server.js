@@ -48,6 +48,7 @@ const getUserInfoMiddleware = async (req, res, next) => {
     const email = decodedToken.email;
     const [loginUser] = await userService.getUserInfoByEmail(email);
     req.loginUser = loginUser;
+    req.user = loginUser;
     next();
   } catch (error) {
     res.status(401).json({
@@ -58,7 +59,7 @@ const getUserInfoMiddleware = async (req, res, next) => {
 };
 
 // Middleware for authentication
-const authenticatedRoutes = ['/api/auth/'];
+const authenticatedRoutes = ['/api/auth/','/api/admin/users'];
 app.use(async (req, res, next) => {
   const requestedRoute = req.path;
   const authCheck = authenticatedRoutes.some((prefix) =>

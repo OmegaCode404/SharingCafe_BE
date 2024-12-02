@@ -1,11 +1,11 @@
-import { Sequelize, DataTypes } from 'sequelize';
-import dotenv from 'dotenv';
-dotenv.config();
-const DB_HOST = process.env.DB_HOST;
-const DB_PORT = process.env.DB_PORT;
-const DB_DATABASE = process.env.DB_DATABASE;
-const DB_USER = process.env.DB_USER;
-const DB_PASSWORD = process.env.DB_PASSWORD;
+import { Sequelize, DataTypes, UUID } from 'sequelize'
+import dotenv from 'dotenv'
+dotenv.config()
+const DB_HOST = process.env.DB_HOST
+const DB_PORT = process.env.DB_PORT
+const DB_DATABASE = process.env.DB_DATABASE
+const DB_USER = process.env.DB_USER
+const DB_PASSWORD = process.env.DB_PASSWORD
 console.log(
   '~~~~DB_HOST',
   DB_HOST,
@@ -16,8 +16,8 @@ console.log(
   '~~~~DB_USER',
   DB_USER,
   '~~~~DB_PASSWORD',
-  DB_PASSWORD,
-);
+  DB_PASSWORD
+)
 
 const sequelize = new Sequelize({
   dialect: 'postgres',
@@ -27,7 +27,13 @@ const sequelize = new Sequelize({
   password: DB_PASSWORD,
   database: DB_DATABASE,
   sync: false,
-});
+  dialectOptions: {
+    ssl: {
+      require: true, // This will enable SSL connection
+      rejectUnauthorized: false, // This will bypass rejecting unauthorized connections
+    },
+  },
+})
 
 const User = sequelize.define(
   'User',
@@ -103,8 +109,8 @@ const User = sequelize.define(
   {
     tableName: 'user',
     timestamps: false,
-  },
-);
+  }
+)
 
 const PersonalProblem = sequelize.define(
   'PersonalProblem',
@@ -127,8 +133,8 @@ const PersonalProblem = sequelize.define(
   {
     tableName: 'personal_problem',
     timestamps: false,
-  },
-);
+  }
+)
 
 const UnlikeTopic = sequelize.define(
   'UnlikeTopic',
@@ -151,8 +157,8 @@ const UnlikeTopic = sequelize.define(
   {
     tableName: 'unlike_topic',
     timestamps: false,
-  },
-);
+  }
+)
 
 const FavoriteDrink = sequelize.define(
   'FavoriteDrink',
@@ -175,8 +181,8 @@ const FavoriteDrink = sequelize.define(
   {
     tableName: 'favorite_drink',
     timestamps: false,
-  },
-);
+  }
+)
 
 const FreeTime = sequelize.define(
   'FreeTime',
@@ -199,8 +205,8 @@ const FreeTime = sequelize.define(
   {
     tableName: 'free_time',
     timestamps: false,
-  },
-);
+  }
+)
 
 const Role = sequelize.define(
   'Role',
@@ -218,8 +224,8 @@ const Role = sequelize.define(
   {
     tableName: 'role',
     timestamps: false,
-  },
-);
+  }
+)
 const GoogleLogin = sequelize.define(
   'GoogleLogin',
   {
@@ -241,8 +247,8 @@ const GoogleLogin = sequelize.define(
   {
     tableName: 'google_login',
     timestamps: false,
-  },
-);
+  }
+)
 
 const Notification = sequelize.define(
   'Notification',
@@ -268,8 +274,8 @@ const Notification = sequelize.define(
   {
     tableName: 'notification',
     timestamps: false,
-  },
-);
+  }
+)
 
 export const UserFilterSetting = sequelize.define(
   'UserFilterSetting',
@@ -335,14 +341,18 @@ export const UserFilterSetting = sequelize.define(
       defaultValue: DataTypes.NOW,
       allowNull: false,
     },
+    priority_interest_ids: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
   },
   {
     tableName: 'user_filter_setting',
     schema: 'public',
     timestamps: false,
     comment: 'This user_filter_setting describe user setting for filtering',
-  },
-);
+  }
+)
 
 const Friendship = sequelize.define(
   'Friendship',
@@ -368,8 +378,8 @@ const Friendship = sequelize.define(
   {
     tableName: 'friend_ship',
     timestamps: false,
-  },
-);
+  }
+)
 const FriendshipStatus = sequelize.define(
   'FriendshipStatus',
   {
@@ -385,8 +395,8 @@ const FriendshipStatus = sequelize.define(
   {
     tableName: 'friendship_status',
     timestamps: false,
-  },
-);
+  }
+)
 const Blog = sequelize.define(
   'Blog',
   {
@@ -431,8 +441,8 @@ const Blog = sequelize.define(
   {
     tableName: 'blog',
     timestamps: false,
-  },
-);
+  }
+)
 const Comment = sequelize.define(
   'Comment',
   {
@@ -460,12 +470,18 @@ const Comment = sequelize.define(
       allowNull: false,
       defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
     },
+    ref_id: {
+      type: DataTypes.UUID,
+    },
+    type: {
+      type: DataTypes.INTEGER,
+    },
   },
   {
     tableName: 'comment',
     timestamps: false,
-  },
-);
+  }
+)
 const Message = sequelize.define(
   'Message',
   {
@@ -495,8 +511,8 @@ const Message = sequelize.define(
   {
     tableName: 'message',
     timestamps: false,
-  },
-);
+  }
+)
 const Event = sequelize.define(
   'Event',
   {
@@ -554,8 +570,8 @@ const Event = sequelize.define(
   {
     tableName: 'event',
     timestamps: false,
-  },
-);
+  }
+)
 const EventParticipation = sequelize.define(
   'EventParticipation',
   {
@@ -582,8 +598,8 @@ const EventParticipation = sequelize.define(
   {
     tableName: 'event_participation',
     timestamps: false,
-  },
-);
+  }
+)
 const EventParticipationStatus = sequelize.define(
   'EventParticipationStatus',
   {
@@ -599,8 +615,8 @@ const EventParticipationStatus = sequelize.define(
   {
     tableName: 'event_participation_status',
     timestamps: false,
-  },
-);
+  }
+)
 const UserStatistics = sequelize.define(
   'UserStatistics',
   {
@@ -634,8 +650,8 @@ const UserStatistics = sequelize.define(
   {
     tableName: 'user_statistics',
     timestamps: false,
-  },
-);
+  }
+)
 const BlogReport = sequelize.define(
   'BlogReport',
   {
@@ -665,8 +681,8 @@ const BlogReport = sequelize.define(
   {
     tableName: 'blog_report',
     timestamps: false,
-  },
-);
+  }
+)
 const EventReport = sequelize.define(
   'EventReport',
   {
@@ -696,8 +712,8 @@ const EventReport = sequelize.define(
   {
     tableName: 'event_report',
     timestamps: false,
-  },
-);
+  }
+)
 const UserReport = sequelize.define(
   'UserReport',
   {
@@ -727,8 +743,8 @@ const UserReport = sequelize.define(
   {
     tableName: 'user_report',
     timestamps: false,
-  },
-);
+  }
+)
 const ReportStatus = sequelize.define(
   'ReportStatus',
   {
@@ -744,8 +760,8 @@ const ReportStatus = sequelize.define(
   {
     tableName: 'report_status',
     timestamps: false,
-  },
-);
+  }
+)
 
 const Interest = sequelize.define(
   'interest',
@@ -777,8 +793,8 @@ const Interest = sequelize.define(
   {
     tableName: 'interest',
     timestamps: false,
-  },
-);
+  }
+)
 
 const UserInterest = sequelize.define(
   'user_interest',
@@ -804,8 +820,8 @@ const UserInterest = sequelize.define(
   {
     tableName: 'user_interest',
     timestamps: false,
-  },
-);
+  }
+)
 
 const Schedule = sequelize.define(
   'schedule',
@@ -844,8 +860,8 @@ const Schedule = sequelize.define(
   {
     tableName: 'schedule',
     timestamps: false,
-  },
-);
+  }
+)
 
 const LikeBlog = sequelize.define(
   'like_blog',
@@ -871,8 +887,35 @@ const LikeBlog = sequelize.define(
   {
     tableName: 'like_blog',
     timestamps: false,
+  }
+)
+
+const Like = sequelize.define(
+  'like',
+  {
+    id: {
+      type: DataTypes.UUID,
+      primaryKey: true,
+      defaultValue: DataTypes.UUIDV4,
+    },
+    ref_id: {
+      type: DataTypes.UUID,
+      allowNull: false,
+    },
+    type: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    user_id: {
+      type: DataTypes.UUID,
+      allowNull: false,
+    },
   },
-);
+  {
+    tableName: 'like',
+    timestamps: false,
+  }
+)
 
 const Province = sequelize.define(
   'province',
@@ -890,8 +933,8 @@ const Province = sequelize.define(
   {
     tableName: 'province',
     timestamps: false,
-  },
-);
+  }
+)
 
 const District = sequelize.define(
   'district',
@@ -912,8 +955,8 @@ const District = sequelize.define(
   {
     tableName: 'district',
     timestamps: false,
-  },
-);
+  }
+)
 
 const Rating = sequelize.define(
   'rating',
@@ -950,8 +993,8 @@ const Rating = sequelize.define(
   {
     tableName: 'rating',
     timestamps: false,
-  },
-);
+  }
+)
 
 const Gender = sequelize.define(
   'gender',
@@ -971,59 +1014,117 @@ const Gender = sequelize.define(
   {
     tableName: 'gender',
     timestamps: false,
+  }
+)
+
+const Discuss = sequelize.define(
+  'discuss',
+  {
+    id: {
+      type: DataTypes.UUID,
+      primaryKey: true,
+      defaultValue: DataTypes.UUIDV4,
+    },
+    ref_id: {
+      type: DataTypes.UUID,
+    },
+    type: {
+      type: DataTypes.INTEGER,
+    },
+    like_count: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    content: {
+      type: DataTypes.TEXT,
+    },
+    title: {
+      type: DataTypes.TEXT,
+    },
+    created_by: {
+      type: DataTypes.UUID,
+    },
   },
-);
+  {
+    tableName: 'discuss',
+    timestamps: false,
+  }
+)
 
-User.belongsTo(Role, { foreignKey: 'role_id', as: 'UserRole' });
+const Image = sequelize.define(
+  'image',
+  {
+    image_id: {
+      type: DataTypes.UUID,
+      primaryKey: true,
+      defaultValue: DataTypes.UUIDV4,
+    },
+    url: {
+      type: DataTypes.TEXT,
+    },
+    ref_id: {
+      type: DataTypes.UUID,
+    },
+    type: {
+      type: DataTypes.INTEGER,
+    },
+  },
+  {
+    tableName: 'image',
+    timestamps: false,
+  }
+)
 
-EventReport.belongsTo(User, { foreignKey: 'reporter_id', as: 'reporter' });
-EventReport.belongsTo(Event, { foreignKey: 'event_id', as: 'event' });
+User.belongsTo(Role, { foreignKey: 'role_id', as: 'UserRole' })
+
+EventReport.belongsTo(User, { foreignKey: 'reporter_id', as: 'reporter' })
+EventReport.belongsTo(Event, { foreignKey: 'event_id', as: 'event' })
 EventReport.belongsTo(ReportStatus, {
   foreignKey: 'report_status_id',
   as: 'reportStatus',
-});
+})
 
-BlogReport.belongsTo(User, { foreignKey: 'reporter_id', as: 'reporter' });
-BlogReport.belongsTo(Blog, { foreignKey: 'blog_id', as: 'blog' });
+BlogReport.belongsTo(User, { foreignKey: 'reporter_id', as: 'reporter' })
+BlogReport.belongsTo(Blog, { foreignKey: 'blog_id', as: 'blog' })
 BlogReport.belongsTo(ReportStatus, {
   foreignKey: 'report_status_id',
   as: 'reportStatus',
-});
-User.belongsTo(Role, { foreignKey: 'role_id', as: 'role' });
-UserStatistics.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+})
+User.belongsTo(Role, { foreignKey: 'role_id', as: 'role' })
+UserStatistics.belongsTo(User, { foreignKey: 'user_id', as: 'user' })
 
-EventParticipation.belongsTo(Event, { foreignKey: 'event_id', as: 'event' });
-EventParticipation.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+EventParticipation.belongsTo(Event, { foreignKey: 'event_id', as: 'event' })
+EventParticipation.belongsTo(User, { foreignKey: 'user_id', as: 'user' })
 // EventParticipation.belongsTo(EventParticipationStatus, {
 //   foreignKey: 'event_participation_status_id',
 //   as: 'eventParticipationStatus',
 // });
 
-Event.belongsTo(User, { foreignKey: 'organizer_id', as: 'organizer' });
+Event.belongsTo(User, { foreignKey: 'organizer_id', as: 'organizer' })
 Event.hasMany(EventParticipation, {
   foreignKey: 'event_id',
   as: 'eventParticipations',
-});
+})
 
-Notification.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+Notification.belongsTo(User, { foreignKey: 'user_id', as: 'user' })
 
-Message.belongsTo(User, { foreignKey: 'sender_id', as: 'sender' });
-Message.belongsTo(User, { foreignKey: 'receiver_id', as: 'receiver' });
+Message.belongsTo(User, { foreignKey: 'sender_id', as: 'sender' })
+Message.belongsTo(User, { foreignKey: 'receiver_id', as: 'receiver' })
 
-Comment.belongsTo(Blog, { foreignKey: 'blog_id', as: 'blog' });
-Comment.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+Comment.belongsTo(Blog, { foreignKey: 'blog_id', as: 'blog' })
+Comment.belongsTo(User, { foreignKey: 'user_id', as: 'user' })
 
-Blog.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+Blog.belongsTo(User, { foreignKey: 'user_id', as: 'user' })
 
-Friendship.belongsTo(User, { foreignKey: 'user_id_1', as: 'user1' });
-Friendship.belongsTo(User, { foreignKey: 'user_id_2', as: 'user2' });
+Friendship.belongsTo(User, { foreignKey: 'user_id_1', as: 'user1' })
+Friendship.belongsTo(User, { foreignKey: 'user_id_2', as: 'user2' })
 Friendship.belongsTo(FriendshipStatus, {
   foreignKey: 'friendship_status_id',
   as: 'friendshipStatus',
-});
-GoogleLogin.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+})
+GoogleLogin.belongsTo(User, { foreignKey: 'user_id', as: 'user' })
 
-export default sequelize;
+export default sequelize
 export {
   sequelize as SequelizeInstance,
   User,
@@ -1045,6 +1146,7 @@ export {
   Interest,
   UserInterest,
   Schedule,
+  Like,
   LikeBlog,
   PersonalProblem,
   UnlikeTopic,
@@ -1055,4 +1157,6 @@ export {
   District,
   Rating,
   Gender,
-};
+  Image,
+  Discuss,
+}

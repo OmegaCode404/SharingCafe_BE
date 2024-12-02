@@ -3,18 +3,18 @@ import {
   SequelizeInstance,
   Comment,
   LikeBlog,
-} from '../utility/DbHelper.js';
+} from '../utility/DbHelper.js'
 
 export async function getBlogs(page, title) {
-  let name = title;
+  let name = title
   if (name == null) {
-    name = '';
+    name = ''
   }
-  let sqlQuery = '';
+  let sqlQuery = ''
   if (page) {
     sqlQuery = `
     select 
-      b.*, u.user_name, i.name, u.profile_avatar
+      b.*, u.user_name, i.name interest_name, u.profile_avatar
     from 
       blog b 
     join 
@@ -34,11 +34,11 @@ export async function getBlogs(page, title) {
     order by b.created_at desc
     offset ((${page} - 1 ) * 10) rows 
     fetch next 10 rows only
-    `;
+    `
   } else {
     sqlQuery = `
     select 
-      b.*, u.user_name, i.name, u.profile_avatar
+      b.*, u.user_name, i.name interest_name, u.profile_avatar
     from 
       blog b 
     join 
@@ -56,13 +56,13 @@ export async function getBlogs(page, title) {
           OR (blocker_id = b.user_id AND blocked_id = u.user_id)
     )
     order by b.created_at desc
-  `;
+  `
   }
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function getBlog(blogId) {
@@ -85,12 +85,12 @@ export async function getBlog(blogId) {
     WHERE (blocker_id = u.user_id AND blocked_id = b.user_id)
         OR (blocker_id = b.user_id AND blocked_id = u.user_id)
   )
-  `;
+  `
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function isUserLikeBlog(blogId, loggedUserId) {
@@ -102,12 +102,12 @@ export async function isUserLikeBlog(blogId, loggedUserId) {
   where 
     blog_id = '${blogId}' 
     and user_id = '${loggedUserId}'
-  `;
+  `
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function createBlog(blogId, dataObj) {
@@ -122,7 +122,7 @@ export async function createBlog(blogId, dataObj) {
     is_approve: true,
     is_visible: true,
     interest_id: dataObj.interest_id,
-  });
+  })
 }
 
 export async function updateBlog(blogId, blogDetails) {
@@ -139,15 +139,15 @@ export async function updateBlog(blogId, blogDetails) {
     },
     {
       where: { blog_id: blogId },
-    },
-  );
+    }
+  )
 }
 
 export async function deleteBlog(blogId) {
   const deletedBlog = await Blog.destroy({
     where: { blog_id: blogId },
-  });
-  return deletedBlog;
+  })
+  return deletedBlog
 }
 
 export async function updateImg(blogId, fileData) {
@@ -157,12 +157,12 @@ export async function updateImg(blogId, fileData) {
     },
     {
       where: { blog_id: blogId },
-    },
-  );
+    }
+  )
 }
 
 export async function getNewBlogs(page) {
-  let sqlQuery = '';
+  let sqlQuery = ''
   if (page) {
     sqlQuery = `
     select 
@@ -186,7 +186,7 @@ export async function getNewBlogs(page) {
     order by b.created_at desc 
     offset ((${page} - 1 ) * 10) rows 
     fetch next 10 rows only
-  `;
+  `
   } else {
     sqlQuery = `
     select 
@@ -208,18 +208,18 @@ export async function getNewBlogs(page) {
           OR (blocker_id = b.user_id AND blocked_id = u.user_id)
     )
     order by b.created_at desc 
-  `;
+  `
   }
 
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function getPopularBlogs(page) {
-  let sqlQuery = '';
+  let sqlQuery = ''
   if (page) {
     sqlQuery = `
     select 
@@ -243,7 +243,7 @@ export async function getPopularBlogs(page) {
     order by b.likes_count desc
     offset ((${page} - 1 ) * 10) rows 
     fetch next 10 rows only
-  `;
+  `
   } else {
     sqlQuery = `
     select 
@@ -265,14 +265,14 @@ export async function getPopularBlogs(page) {
           OR (blocker_id = b.user_id AND blocked_id = u.user_id)
     )
     order by b.likes_count desc 
-  `;
+  `
   }
 
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function searchByName(title) {
@@ -295,39 +295,30 @@ export async function searchByName(title) {
       WHERE (blocker_id = u.user_id AND blocked_id = b.user_id)
           OR (blocker_id = b.user_id AND blocked_id = u.user_id)
     )
-  `;
+  `
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function getComments(blogId) {
   const sqlQuery = `
-  select 
-    c.comment_id , c."content", c.parent_comment_id, u.user_id ,u.user_name , u.profile_avatar
-  from 
- 	"comment" c
-  join
- 	  "user" u 
- 	  on u.user_id = c.user_id
-  join 
- 	  blog b 
- 	  on b.blog_id = c.blog_id 
-  where c.blog_id = '${blogId}'
-  AND NOT EXISTS (
-      SELECT 1
-      FROM public.user_block
-      WHERE (blocker_id = u.user_id AND blocked_id = b.user_id)
-          OR (blocker_id = b.user_id AND blocked_id = u.user_id)
-    )
-  `;
+    select 
+      c.comment_id , c."content", c.parent_comment_id,
+      u.user_id ,u.user_name , u.profile_avatar
+    from 
+      "comment" c
+        join  "user" u
+          on c.blog_id = '${blogId}' 
+            and u.user_id = c.user_id
+  `
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function createComment(comment_id, dataObj) {
@@ -335,18 +326,18 @@ export async function createComment(comment_id, dataObj) {
   UPDATE blog 
   SET comments_count = comments_count + 1
   WHERE blog_id = '${dataObj.blogId}'
-`;
+`
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
+  })
   return await Comment.create({
     comment_id: comment_id,
     blog_id: dataObj.blogId,
     user_id: dataObj.userId,
     content: dataObj.content,
     parent_comment_id: dataObj.parent_comment_id,
-  });
+  })
 }
 
 export async function getComment(commentId) {
@@ -368,12 +359,12 @@ export async function getComment(commentId) {
       WHERE (blocker_id = u.user_id AND blocked_id = b.user_id)
           OR (blocker_id = b.user_id AND blocked_id = u.user_id)
     )
-  `;
+  `
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function updateComment(commentId, content) {
@@ -383,8 +374,8 @@ export async function updateComment(commentId, content) {
     },
     {
       where: { comment_id: commentId },
-    },
-  );
+    }
+  )
 }
 
 export async function likeBlog(like_blog_id, dataObj) {
@@ -392,16 +383,16 @@ export async function likeBlog(like_blog_id, dataObj) {
     UPDATE blog 
     SET likes_count = likes_count + 1
     WHERE blog_id = '${dataObj.blog_id}'
-  `;
+  `
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
+  })
   return await LikeBlog.create({
     like_blog_id: like_blog_id,
     user_id: dataObj.user_id,
     blog_id: dataObj.blog_id,
-  });
+  })
 }
 
 export async function unlikeBlog(dataObj) {
@@ -409,39 +400,39 @@ export async function unlikeBlog(dataObj) {
     UPDATE blog 
     SET likes_count = likes_count - 1
     WHERE blog_id = '${dataObj.blog_id}'
-  `;
+  `
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
+  })
   const deletedLikeBlog = await LikeBlog.destroy({
     where: { like_blog_id: dataObj.like_blog_id },
-  });
-  return deletedLikeBlog;
+  })
+  return deletedLikeBlog
 }
 
 export async function deleteComment(commentId, blogId) {
   const deletedComment = await Comment.destroy({
     where: { comment_id: commentId },
-  });
+  })
   const sqlQuery = `
     UPDATE blog 
     SET comments_count = comments_count - 1
     WHERE blog_id = '${blogId}'
-    `;
+    `
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return deletedComment;
+  })
+  return deletedComment
 }
 
 export async function getUserBlog(page, title) {
-  let name = title;
+  let name = title
   if (name == null) {
-    name = '';
+    name = ''
   }
-  let sqlQuery = '';
+  let sqlQuery = ''
   if (page) {
     sqlQuery = `
     select 
@@ -464,7 +455,7 @@ export async function getUserBlog(page, title) {
     )
     offset ((${page} - 1 ) * 10) rows 
     fetch next 10 rows only
-    `;
+    `
   } else {
     sqlQuery = `
     select 
@@ -485,13 +476,13 @@ export async function getUserBlog(page, title) {
       WHERE (blocker_id = u.user_id AND blocked_id = b.user_id)
           OR (blocker_id = b.user_id AND blocked_id = u.user_id)
     )
-  `;
+  `
   }
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }
 
 export async function getMyBlogs(userId) {
@@ -514,10 +505,10 @@ export async function getMyBlogs(userId) {
   left join interest i 
   on b.interest_id = i.interest_id 
   where u.user_id = '${userId}'
-  `;
+  `
   const result = await SequelizeInstance.query(sqlQuery, {
     type: SequelizeInstance.QueryTypes.SELECT,
     raw: true,
-  });
-  return result;
+  })
+  return result
 }

@@ -21,7 +21,9 @@ export async function createEvent(dataObj) {
 export async function updateEvent(eventId, eventDetails) {
   const event = await getEvent(eventId);
   if (!event) throw new Error('Event Not Found !!!');
-  return await eventDAL.updateEvent(eventId, eventDetails);
+   else {
+    return await eventDAL.updateEvent(eventId, eventDetails);
+  }
 }
 
 export async function deleteEvent(eventId) {
