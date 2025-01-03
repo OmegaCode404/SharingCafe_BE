@@ -68,3 +68,7 @@ export async function createRating(loginUser, dataObj) {
 export async function getScheduleRating(scheduleId) {
   return await scheduleDAL.getScheduleRating(scheduleId);
 }
+
+export async function getCalendar(userId) {
+  return await scheduleDAL.getCalendar(userId);
+}

@@ -261,3 +261,33 @@ export async function canceledSchedule(userId, blockedId) {
   });
   return userDetails;
 }
+
+export async function getCalendar(userId) {
+  const sqlQuery = `
+    SELECT
+        s."content" AS title,
+        s."location" AS description,
+        s."schedule_time" AS start_date,
+        s."schedule_time" + INTERVAL '30 minutes' AS end_date,
+        'SCHEDULE' AS type
+    FROM "schedule" s
+    WHERE s.sender_id = '${userId}'
+      OR s.receiver_id = '${userId}'
+    UNION ALL
+    SELECT
+        e."title" AS title,
+        e."location" AS description,
+        e."time_of_event" AS start_date,
+        e."end_of_event" AS end_date,
+        'EVENT' AS type
+    FROM "event" e
+            JOIN public.event_participation ep ON e.event_id = ep.event_id
+    WHERE ep.user_id = '${userId}'
+    ORDER BY start_date DESC;
+  `;
+  const calendar = await SequelizeInstance.query(sqlQuery, {
+    type: SequelizeInstance.QueryTypes.SELECT,
+    raw: true,
+  });
+  return calendar;
+}
